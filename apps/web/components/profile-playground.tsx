@@ -402,7 +402,7 @@ export function ProfilePlayground() {
         </div>
       </Panel>
 
-      <Panel title="Samples">
+      <Panel className="h-fit lg:sticky lg:top-6" title="Samples">
         <ul className="space-y-3 text-sm">
           {samples.map((sample) => {
             const isActive = sample.slug === selectedSample.slug;

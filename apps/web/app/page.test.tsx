@@ -31,10 +31,11 @@ describe("HomePage", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders the required tab labels", () => {
+  it("renders the primary navigation and workspace entry points", () => {
     render(<HomePage />);
-    expect(screen.getByText("Overview")).toBeInTheDocument();
-    expect(screen.getByText("Schema")).toBeInTheDocument();
+    expect(screen.getByText("Profile")).toBeInTheDocument();
     expect(screen.getByText("Drift")).toBeInTheDocument();
+    expect(screen.getByText("Playground")).toBeInTheDocument();
+    expect(screen.getByText("Quiet by default")).toBeInTheDocument();
   });
 });

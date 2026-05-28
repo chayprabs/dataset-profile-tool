@@ -1,10 +1,9 @@
 import Link from "next/link";
 
-import { Panel, StatPill } from "@dataprofile/shared-ui";
+import { StatPill } from "@dataprofile/shared-ui";
 
 import { ProfilePlayground } from "../components/profile-playground";
 
-const tabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies", "Drift"];
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -43,6 +42,26 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         type="application/ld+json"
       />
+      <div className="ui-topbar">
+        <div className="ui-brand">
+          <span className="ui-brand-mark">DP</span>
+          <div className="ui-brand-copy">
+            <span className="ui-brand-title">DataProfile</span>
+            <span className="ui-brand-subtitle">DuckDB-backed profiling and drift review</span>
+          </div>
+        </div>
+        <nav aria-label="Primary" className="ui-nav">
+          <Link className="ui-navlink" href="/">
+            Profile
+          </Link>
+          <Link className="ui-navlink" href="/drift">
+            Drift
+          </Link>
+          <a className="ui-navlink" href="https://github.com/chayprabs/dataset-profile-tool">
+            GitHub
+          </a>
+        </nav>
+      </div>
       <header className="ui-hero grid gap-8 p-8 lg:grid-cols-[1.2fr_0.8fr] lg:p-10">
         <div className="space-y-6">
           <div>
@@ -108,27 +127,15 @@ export default function HomePage() {
         </div>
       </header>
 
-      <ProfilePlayground />
+      <div className="ui-note-strip">
+        <span className="ui-note-label">Quiet by default</span>
+        <p className="ui-note-copy">
+          The page explains the tool once, then gets out of the way and lets the profiling
+          workspace stay front and center.
+        </p>
+      </div>
 
-      <section className="grid gap-6 md:grid-cols-3">
-        {tabs.map((tab) => (
-          <Panel key={tab} title={tab}>
-            <p className="text-sm leading-6 text-black/65">
-              {tab === "Overview"
-                ? "Quick health, row count, coverage, and worker warnings."
-                : tab === "Columns"
-                  ? "Type inference, nulls, uniqueness, PII signals, and top values."
-                  : tab === "Schema"
-                    ? "Draft 2020-12 schema output ready for AJV validation."
-                    : tab === "Sample"
-                      ? "Head, tail, or random samples with safe redaction."
-                      : tab === "Anomalies"
-                        ? "Column-level anomaly hints to focus follow-up checks."
-                        : "Snapshot-to-snapshot change classification with shareable exports."}
-            </p>
-          </Panel>
-        ))}
-      </section>
+      <ProfilePlayground />
     </main>
   );
 }

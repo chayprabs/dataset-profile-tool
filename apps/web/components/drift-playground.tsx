@@ -276,7 +276,7 @@ export function DriftPlayground() {
         </div>
       </Panel>
 
-      <Panel title="Reference">
+      <Panel className="h-fit lg:sticky lg:top-6" title="Reference">
         <div className="space-y-3 text-sm text-black/70">
           <p>
             `breaking` means a downstream contract likely needs work before rollout. `compatible`
