@@ -91,15 +91,18 @@ def profile_dataset(
                 source_query = "SELECT * FROM dataprofile_arrow_source"
             else:
                 source_query = source.query
-            connection.execute(f"CREATE OR REPLACE TEMP VIEW active_source AS {source_query}")
-            row_count += connection.execute("SELECT COUNT(*) FROM active_source").fetchone()[0]
+            connection.execute("DROP TABLE IF EXISTS active_source")
+            connection.execute(f"CREATE OR REPLACE TEMP TABLE active_source AS {source_query}")
+            source_row_count = connection.execute("SELECT COUNT(*) FROM active_source").fetchone()[0]
+            row_count += source_row_count
             if not sample_rows:
                 sample_rows = fetch_sample_rows(connection, sample_size, sample_mode)
-            all_columns.extend(profile_columns(connection, source.column_prefix))
+            all_columns.extend(profile_columns(connection, source_row_count, source.column_prefix))
             if source.warning:
                 warnings.append(source.warning)
             if source.arrow_table is not None:
                 connection.unregister("dataprofile_arrow_source")
+        connection.execute("DROP TABLE IF EXISTS active_source")
 
     schema = infer_json_schema(all_columns)
     return ProfileResponse(
@@ -204,9 +207,8 @@ def list_sqlite_tables(path: Path) -> list[str]:
     return [row[0] for row in rows]
 
 
-def profile_columns(connection, column_prefix: str | None = None) -> list[ColumnProfile]:
+def profile_columns(connection, row_count: int, column_prefix: str | None = None) -> list[ColumnProfile]:
     described_columns = connection.execute("DESCRIBE SELECT * FROM active_source").fetchall()
-    row_count = connection.execute("SELECT COUNT(*) FROM active_source").fetchone()[0] or 0
     profiles: list[ColumnProfile] = []
     for name, duckdb_type, *_ in described_columns:
         quoted = quote_identifier(name)

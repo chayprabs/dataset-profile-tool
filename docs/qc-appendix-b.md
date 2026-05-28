@@ -55,9 +55,17 @@ Local benchmark harness now exists at [scripts/benchmark_worker.py](/C:/Users/ch
 Latest lightweight local sample runs:
 
 ```text
-profile-csv --target-mb 5 --repeats 2
-  meanSeconds: 29.4799
-  p95Seconds: 31.2508
+profile-csv --target-mb 25 --repeats 2
+  meanSeconds: 3.7975
+  p95Seconds: 4.6517
+
+profile-parquet --target-mb 5 --repeats 2
+  meanSeconds: 1.7821
+  p95Seconds: 2.0118
+
+drift-csv --target-mb 5 --repeats 2
+  meanSeconds: 3.7346
+  p95Seconds: 4.5392
 
 memory-soak-csv --target-mb 5 --iterations 3
   rssBeforeMb: 90.41
@@ -65,7 +73,7 @@ memory-soak-csv --target-mb 5 --iterations 3
   rssDeltaMb: 0.50
 ```
 
-This is useful proof that the benchmark and soak harnesses work, but it does **not** satisfy the release targets yet.
+This is useful proof that the benchmark and soak harnesses work and that the worker hot path improved substantially after materializing sources into a temp table. It still does **not** satisfy the release targets yet because the checklist requires 100 MB CSV, 1 GB Parquet, and 100 MB drift evidence.
 
 ## Docker verification evidence captured so far
 
@@ -88,7 +96,7 @@ This means compose syntax and service wiring are valid, but booting the stack st
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and release-artifact checks are still pending.
 - Monaco is now in place, but the Columns table still needs stronger evidence for full checklist-grade virtualization behavior under larger datasets.
-- Current lightweight benchmark timings are far above the PRD latency targets, so profiling performance still needs focused optimization.
+- Benchmarks improved sharply, but release-size benchmark evidence is still missing.
 - Final Appendix B verdict remains open until every Section 3 checkbox has hard evidence.
 
 ## Next verification sweep
