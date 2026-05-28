@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "packageManager": "pnpm@10.4.1",
   "scripts": {
+    "benchmark:drift-csv": "python scripts/benchmark_worker.py drift-csv --target-mb 25 --repeats 3",
+    "benchmark:memory-soak": "python scripts/benchmark_worker.py memory-soak-csv --target-mb 25 --iterations 10",
+    "benchmark:profile-csv": "python scripts/benchmark_worker.py profile-csv --target-mb 25 --repeats 3",
+    "benchmark:profile-parquet": "python scripts/benchmark_worker.py profile-parquet --target-mb 25 --repeats 3",
     "build": "pnpm --filter @dataprofile/web build && pnpm --filter @dataprofile/shared-types build && pnpm --filter @dataprofile/shared-ui build && pnpm --filter @dataprofile/shared-worker-runtime build",
     "dev": "pnpm --filter @dataprofile/web dev",
     "lint": "pnpm --filter @dataprofile/web lint && pnpm --filter @dataprofile/shared-types lint && pnpm --filter @dataprofile/shared-ui lint && pnpm --filter @dataprofile/shared-worker-runtime lint",

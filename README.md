@@ -19,3 +19,17 @@ docker compose up --build
 ```
 
 The web app runs on `http://localhost:3000` and the worker health check is `http://localhost:8080/v1/health`.
+
+## Verification helpers
+
+Repeatable qualification-oriented commands:
+
+```bash
+pnpm test:worker-coverage
+python scripts/benchmark_worker.py profile-csv --target-mb 25 --repeats 3
+python scripts/benchmark_worker.py profile-parquet --target-mb 25 --repeats 3
+python scripts/benchmark_worker.py drift-csv --target-mb 25 --repeats 3
+python scripts/benchmark_worker.py memory-soak-csv --target-mb 25 --iterations 10
+```
+
+The worker health response also reports configured runtime limits for memory, CPU, wall clock, and open files.
