@@ -50,6 +50,8 @@ Coverage gate policy is enforced by:
 - Share-link expiry is covered at both store and endpoint level in `apps/worker/tests/test_share.py`.
 - Web smoke verification of `/drift` plus generated `/s/[token]` read-only links.
 - Worker health route now reports configured runtime limits and startup-applied OS process limits.
+- The columns table and sample grid are both virtualized in the web UI.
+- A dedicated `/opengraph-image` route now backs Open Graph/Twitter preview images.
 
 ## Benchmark evidence captured so far
 
@@ -164,7 +166,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 - Worker memory-cap configuration is now surfaced by `/v1/health`, and sampled worker-process RSS stayed well below `4096 MB` for `100 MB CSV`, `100 MB drift`, and `1 GB Parquet`. The remaining gap is methodological hardening: we should decide whether the external RSS probe should replace the older in-process soak in the formal checklist runbook.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and release-artifact checks are still pending.
-- Monaco is now in place with copy/download controls, and the sample grid is virtualized. The remaining UI gap is stronger evidence for columns-table behavior under larger datasets.
+- Monaco is now in place with copy/download controls, and both the sample grid and columns table are virtualized. The remaining UI gap is stronger runtime evidence for those surfaces under larger datasets.
 - Release-size benchmark evidence now exists for the main worker paths, and the core latency gates are currently green locally.
 - Final Appendix B verdict remains open until every Section 3 checkbox has hard evidence.
 

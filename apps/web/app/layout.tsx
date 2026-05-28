@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     title: "DataProfile",
     description:
       "Profile CSV, Parquet, JSONL, Avro, and SQLite datasets online with schema inference, drift detection, anomalies, nulls, and cardinality.",
+    images: [
+      {
+        url: "/opengraph-image"
+      }
+    ],
     url: siteUrl,
     siteName: "DataProfile",
     type: "website"
@@ -20,7 +25,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DataProfile",
     description:
-      "Profile CSV, Parquet, JSONL, Avro, and SQLite datasets online with schema inference, drift detection, anomalies, nulls, and cardinality."
+      "Profile CSV, Parquet, JSONL, Avro, and SQLite datasets online with schema inference, drift detection, anomalies, nulls, and cardinality.",
+    images: ["/opengraph-image"]
   }
 };
 

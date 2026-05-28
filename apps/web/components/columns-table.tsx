@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   flexRender,
@@ -10,6 +10,7 @@ import {
   type ColumnDef,
   type SortingState
 } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import type { ColumnProfile } from "@dataprofile/shared-types";
 
@@ -18,6 +19,7 @@ import { ProfileHistogram } from "./profile-histogram";
 export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
   const [selectedColumnName, setSelectedColumnName] = useState<string | null>(columns[0]?.name ?? null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "nullPct", desc: true }]);
+  const parentRef = useRef<HTMLDivElement | null>(null);
 
   const selectedColumn = columns.find((column) => column.name === selectedColumnName) ?? columns[0] ?? null;
   const columnDefs = useMemo<ColumnDef<ColumnProfile>[]>(
@@ -89,6 +91,13 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
     state: { sorting }
   });
 
+  const virtualizer = useVirtualizer({
+    count: table.getRowModel().rows.length,
+    estimateSize: () => 84,
+    getScrollElement: () => parentRef.current,
+    overscan: 8
+  });
+
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white/82 shadow-sm shadow-black/5">
@@ -122,23 +131,29 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
             </button>
           ))}
         </div>
-        <div className="max-h-[26rem] overflow-auto">
-          {table.getRowModel().rows.map((row) => (
-            <button
-              key={row.id}
-                className={`grid w-full grid-cols-[1.6fr_0.8fr_0.8fr_1fr_1fr] gap-3 border-b border-[var(--border)] px-4 py-4 text-left text-sm transition hover:bg-[var(--accent-soft)] last:border-b-0 ${
-                row.original.name === selectedColumn?.name ? "bg-[var(--accent-soft)]/80" : "bg-white/72"
-              }`}
-              onClick={() =>
-                setSelectedColumnName((current) => (current === row.original.name ? null : row.original.name))
-              }
-              type="button"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <div key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
-              ))}
-            </button>
-          ))}
+        <div className="max-h-[26rem] overflow-auto" ref={parentRef}>
+          <div className="relative" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const row = table.getRowModel().rows[virtualRow.index];
+              return (
+                <button
+                  key={row.id}
+                  className={`absolute left-0 grid w-full grid-cols-[1.6fr_0.8fr_0.8fr_1fr_1fr] gap-3 border-b border-[var(--border)] px-4 py-4 text-left text-sm transition hover:bg-[var(--accent-soft)] ${
+                    row.original.name === selectedColumn?.name ? "bg-[var(--accent-soft)]/80" : "bg-white/72"
+                  }`}
+                  onClick={() =>
+                    setSelectedColumnName((current) => (current === row.original.name ? null : row.original.name))
+                  }
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                  type="button"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <div key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+                  ))}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
