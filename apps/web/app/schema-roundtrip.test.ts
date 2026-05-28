@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 const webRoot = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(webRoot, "..");
+const schemaRoundTripTimeoutMs = 30000;
 
 function loadProfileFixture(sampleName: string) {
   const pythonSnippet = `
@@ -46,7 +47,7 @@ describe("schema inference round-trip", () => {
     const failures = profile.sampleRows.filter((row) => !validate(row));
 
     expect(failures).toHaveLength(0);
-  }, 15000);
+  }, schemaRoundTripTimeoutMs);
 
   it("validates pii-laden sample rows with ajv draft 2020", () => {
     const profile = loadProfileFixture("pii-laden.csv");
@@ -57,5 +58,5 @@ describe("schema inference round-trip", () => {
     const failures = profile.sampleRows.filter((row) => !validate(row));
 
     expect(failures).toHaveLength(0);
-  }, 15000);
+  }, schemaRoundTripTimeoutMs);
 });

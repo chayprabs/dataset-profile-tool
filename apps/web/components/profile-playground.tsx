@@ -28,6 +28,7 @@ export function ProfilePlayground() {
   const [sampleMode, setSampleMode] = useState<SampleMode>("head");
   const [redactSamples, setRedactSamples] = useState(true);
   const [profile, setProfile] = useState<ProfileResult | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,6 +60,7 @@ export function ProfilePlayground() {
     url?: string;
   }) {
     setError(null);
+    setShareUrl(null);
     setIsLoading(true);
     try {
       const formData = new FormData();
@@ -272,7 +274,20 @@ export function ProfilePlayground() {
                       label="Export Schema"
                       mimeType="application/schema+json"
                     />
+                    <button
+                      className="rounded-full border border-[var(--border)] bg-white/80 px-4 py-2 text-sm text-black/70 transition hover:bg-white"
+                      onClick={() => void createShareLink(profile, setShareUrl, setError)}
+                      type="button"
+                    >
+                      Create Share Link
+                    </button>
                   </div>
+                  {shareUrl ? (
+                    <div className="rounded-[1.25rem] border border-[var(--border)] bg-white/80 p-4 text-sm">
+                      <p className="font-medium">Share URL</p>
+                      <p className="mt-2 break-all text-black/65">{shareUrl}</p>
+                    </div>
+                  ) : null}
                   <div className="grid gap-4 md:grid-cols-3">
                     <MetricCard label="Rows" value={profile.source.rowCount.toLocaleString()} />
                     <MetricCard label="Columns" value={profile.columns.length.toString()} />
@@ -536,4 +551,31 @@ function inferFormatFromName(value: string): string | null {
   ] as const;
   const matched = suffixes.find((suffix) => lower.endsWith(suffix));
   return matched ? matched.slice(1).replace("db", "sqlite").replace("ipc", "arrow") : null;
+}
+
+async function createShareLink(
+  profile: ProfileResult,
+  setShareUrl: (value: string | null) => void,
+  setError: (value: string | null) => void
+) {
+  setError(null);
+  try {
+    const response = await fetch(`${apiBaseUrl}/v1/share`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        kind: "profile",
+        payload: profile
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`Share link request failed with ${response.status}.`);
+    }
+    const payload = (await response.json()) as { token: string };
+    setShareUrl(`${window.location.origin}/s/${payload.token}`);
+  } catch (caughtError) {
+    setError(caughtError instanceof Error ? caughtError.message : "Share link request failed.");
+  }
 }

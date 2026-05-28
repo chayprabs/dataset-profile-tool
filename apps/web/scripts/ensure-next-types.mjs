@@ -6,6 +6,7 @@ const root = new globalThis.URL("../", import.meta.url);
 const files = [
   ".next/types/app/layout.ts",
   ".next/types/app/page.ts",
+  ".next/types/app/s/[token]/page.ts",
   ".next/types/cache-life.d.ts",
   ".next/types/link.d.ts"
 ];
