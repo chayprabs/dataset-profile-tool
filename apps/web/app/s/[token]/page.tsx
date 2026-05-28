@@ -13,6 +13,44 @@ type SharedPayload = {
     schema?: Record<string, unknown>;
     warnings?: string[];
     sampleRows?: Array<Record<string, unknown>>;
+    added?: string[];
+    removed?: string[];
+    typeChanges?: Array<{
+      kind: "type";
+      column: string;
+      severity: "additive" | "compatible" | "breaking";
+      message: string;
+      before?: unknown;
+      after?: unknown;
+      patchHint?: Record<string, unknown>;
+    }>;
+    rangeChanges?: Array<{
+      kind: "range";
+      column: string;
+      severity: "additive" | "compatible" | "breaking";
+      message: string;
+      before?: unknown;
+      after?: unknown;
+      patchHint?: Record<string, unknown>;
+    }>;
+    cardinalityChanges?: Array<{
+      kind: "cardinality";
+      column: string;
+      severity: "additive" | "compatible" | "breaking";
+      message: string;
+      before?: unknown;
+      after?: unknown;
+      patchHint?: Record<string, unknown>;
+    }>;
+    changes?: Array<{
+      kind: "added" | "removed" | "type" | "range" | "cardinality";
+      column: string;
+      severity: "additive" | "compatible" | "breaking";
+      message: string;
+      before?: unknown;
+      after?: unknown;
+      patchHint?: Record<string, unknown>;
+    }>;
   };
   expiresAt: string;
 };
@@ -134,12 +172,52 @@ export default async function SharedProfilePage({
           </section>
         </>
       ) : (
-        <section className="rounded-[1.75rem] border border-[#d8d0c4] bg-white/85 p-5 shadow-lg shadow-black/5">
-          <h2 className="text-xl font-semibold">Shared drift payload</h2>
-          <pre className="mt-4 overflow-auto rounded-[1.25rem] bg-[#111111] p-4 text-xs text-[#d7f7ec]">
-            {JSON.stringify(profile, null, 2)}
-          </pre>
-        </section>
+        <>
+          <section className="grid gap-4 md:grid-cols-3">
+            <StatCard label="Total changes" value={String(profile.changes?.length ?? 0)} />
+            <StatCard label="Added" value={String(profile.added?.length ?? 0)} />
+            <StatCard label="Removed" value={String(profile.removed?.length ?? 0)} />
+          </section>
+
+          <section className="grid gap-4">
+            {(profile.changes ?? []).map((change, index) => (
+              <article
+                key={`${change.column}-${change.kind}-${index}`}
+                className="rounded-[1.75rem] border border-[#d8d0c4] bg-white/85 p-5 shadow-lg shadow-black/5"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-xl font-semibold">{change.column}</h2>
+                  <Tag tone={change.severity === "breaking" ? "alert" : "muted"}>
+                    {change.severity}
+                  </Tag>
+                  <Tag tone="neutral">{change.kind}</Tag>
+                </div>
+                <p className="mt-3 text-sm text-black/65">{change.message}</p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-[1.25rem] bg-[#fbf8f2] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-black/45">Before</p>
+                    <p className="mt-2 text-sm text-black/75">{renderValue(change.before)}</p>
+                  </div>
+                  <div className="rounded-[1.25rem] bg-[#fbf8f2] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-black/45">After</p>
+                    <p className="mt-2 text-sm text-black/75">{renderValue(change.after)}</p>
+                  </div>
+                </div>
+                {change.patchHint ? (
+                  <pre className="mt-4 overflow-auto rounded-[1.25rem] bg-[#111111] p-4 text-xs text-[#d7f7ec]">
+                    {JSON.stringify(change.patchHint, null, 2)}
+                  </pre>
+                ) : null}
+              </article>
+            ))}
+
+            {(profile.changes?.length ?? 0) === 0 ? (
+              <section className="rounded-[1.75rem] border border-[#d8d0c4] bg-white/85 p-5 text-sm text-black/65 shadow-lg shadow-black/5">
+                No drift changes are stored in this shared snapshot.
+              </section>
+            ) : null}
+          </section>
+        </>
       )}
     </main>
   );
@@ -159,15 +237,32 @@ function Tag({
   tone
 }: {
   children: React.ReactNode;
-  tone: "alert" | "muted";
+  tone: "alert" | "muted" | "neutral";
 }) {
   return (
     <span
       className={`rounded-full px-3 py-1 text-xs ${
-        tone === "alert" ? "bg-[#fde9dd] text-[#8f3b0e]" : "bg-[#e3f3ee] text-[#0e5f4f]"
+        tone === "alert"
+          ? "bg-[#fde9dd] text-[#8f3b0e]"
+          : tone === "neutral"
+            ? "bg-[#f1eadf] text-black/65"
+            : "bg-[#e3f3ee] text-[#0e5f4f]"
       }`}
     >
       {children}
     </span>
   );
+}
+
+function renderValue(value: unknown) {
+  if (value === undefined) {
+    return "-";
+  }
+  if (value === null) {
+    return "null";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return JSON.stringify(value);
 }

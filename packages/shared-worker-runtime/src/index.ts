@@ -41,5 +41,12 @@ export const samples: SampleDescriptor[] = [
     format: "csv",
     description: "Golden fixture for baseline drift comparisons.",
     path: "/samples/drift-week-1.csv"
+  },
+  {
+    slug: "drift-week-2",
+    label: "Drift Week 2",
+    format: "csv",
+    description: "Golden fixture for changed snapshot drift comparisons.",
+    path: "/samples/drift-week-2.csv"
   }
 ];

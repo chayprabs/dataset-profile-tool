@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Panel, StatPill } from "@dataprofile/shared-ui";
 
 import { ProfilePlayground } from "../components/profile-playground";
@@ -17,12 +19,20 @@ export default function HomePage() {
               Stream dataset profiling through DuckDB.
             </h1>
           </div>
-          <a
-            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm"
-            href="https://github.com/chayprabs/dataset-profile-tool"
-          >
-            GitHub
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm"
+              href="/drift"
+            >
+              Drift Mode
+            </Link>
+            <a
+              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm"
+              href="https://github.com/chayprabs/dataset-profile-tool"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
         <p className="max-w-3xl text-base leading-7 text-black/70">
           Drop a file, paste a presigned URL, or open a sample to inspect
@@ -50,7 +60,9 @@ export default function HomePage() {
                     ? "Draft 2020-12 schema output ready for AJV validation."
                     : tab === "Sample"
                       ? "Head, tail, or random samples with safe redaction."
-                      : "Column-level anomaly hints to focus follow-up checks."}
+                      : tab === "Anomalies"
+                        ? "Column-level anomaly hints to focus follow-up checks."
+                        : "Snapshot-to-snapshot change classification with shareable exports."}
             </p>
           </Panel>
         ))}
