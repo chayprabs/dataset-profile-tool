@@ -7,7 +7,7 @@
     "dev": "next dev",
     "lint": "eslint .",
     "test": "vitest run",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "node ./scripts/ensure-next-types.mjs && tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
     "@dataprofile/shared-types": "workspace:*",

@@ -158,7 +158,7 @@ def materialize_sources(connection, prepared: PreparedSource, temp_root: Path) -
                 query=f"SELECT * FROM read_csv_auto({path_sql}, sample_size=-1, header=true, delim='\t')"
             )
         ]
-    if prepared.format in {"json", "jsonl"}:
+    if prepared.format in {"json", "jsonl", "avro"}:
         return [MaterializedSource(query=f"SELECT * FROM read_json_auto({path_sql})")]
     if prepared.format == "parquet":
         return [MaterializedSource(query=f"SELECT * FROM read_parquet({path_sql})")]
@@ -275,10 +275,14 @@ def build_histogram(connection, quoted: str, min_value: float | None, max_value:
         return []
     if min_value == max_value:
         return [connection.execute(f"SELECT COUNT(*) FROM active_source WHERE {quoted} IS NOT NULL").fetchone()[0]]
+    span = float(max_value) - float(min_value)
     bins = connection.execute(
         f"""
         WITH bucketed AS (
-          SELECT width_bucket(CAST({quoted} AS DOUBLE), {float(min_value)}, {float(max_value)}, 8) AS bucket
+          SELECT LEAST(
+            7,
+            CAST(FLOOR(((CAST({quoted} AS DOUBLE) - {float(min_value)}) / {span}) * 8) AS BIGINT)
+          ) AS bucket
           FROM active_source
           WHERE {quoted} IS NOT NULL
         )
