@@ -46,6 +46,7 @@ FORMAT_ALIASES = {
 HISTOGRAM_BUCKETS = 8
 EXACT_TOP_VALUES_MAX_UNIQUE = 1000
 EXACT_TOP_VALUES_MAX_UNIQUE_PCT = 25.0
+APPROX_UNIQUE_COUNT_SIZE_BYTES = 512 * 1024 * 1024
 ProfileMode = Literal["full", "drift"]
 
 DUCKDB_TYPE_MAP = {
@@ -80,6 +81,7 @@ def profile_dataset(
     sample_size: int = 20,
     sample_mode: str = "head",
     profile_mode: ProfileMode = "full",
+    source_sha256: str | None = None,
 ) -> ProfileResponse:
     prepared = prepare_source(path, format_hint)
     job_id = str(uuid.uuid4())
@@ -90,6 +92,9 @@ def profile_dataset(
         all_columns: list[ColumnProfile] = []
         row_count = 0
         warnings = list(prepared.warnings)
+        use_approx_unique_counts = should_use_approx_unique_counts(prepared, profile_mode)
+        if use_approx_unique_counts:
+            warnings.append("Approximate unique counts enabled for large Parquet sources to keep profile latency within budget.")
         for source in sources:
             if source.arrow_table is not None:
                 connection.register("dataprofile_arrow_source", source.arrow_table)
@@ -102,7 +107,15 @@ def profile_dataset(
             row_count += source_row_count
             if profile_mode == "full" and not sample_rows:
                 sample_rows = fetch_sample_rows(connection, sample_size, sample_mode)
-            all_columns.extend(profile_columns(connection, source_row_count, source.column_prefix, profile_mode))
+            all_columns.extend(
+                profile_columns(
+                    connection,
+                    source_row_count,
+                    source.column_prefix,
+                    profile_mode,
+                    use_approx_unique_counts,
+                )
+            )
             if source.warning:
                 warnings.append(source.warning)
             if source.arrow_table is not None:
@@ -116,7 +129,7 @@ def profile_dataset(
             format=prepared.format,
             sizeBytes=prepared.size_bytes,
             rowCount=row_count,
-            sha256=sha256_file(prepared.path),
+            sha256=source_sha256 or sha256_file(prepared.path),
         ),
         columns=all_columns,
         schema=schema,
@@ -217,10 +230,17 @@ def profile_columns(
     row_count: int,
     column_prefix: str | None = None,
     profile_mode: ProfileMode = "full",
+    use_approx_unique_counts: bool = False,
 ) -> list[ColumnProfile]:
     described_columns = connection.execute("DESCRIBE SELECT * FROM active_source").fetchall()
     sample_rows = fetch_analysis_rows(connection, 200 if profile_mode == "full" else 64)
-    counts_by_column = collect_column_counts(connection, described_columns, sample_rows, profile_mode)
+    counts_by_column = collect_column_counts(
+        connection,
+        described_columns,
+        sample_rows,
+        profile_mode,
+        use_approx_unique_counts,
+    )
     profiles: list[ColumnProfile] = []
     for name, duckdb_type, *_ in described_columns:
         quoted = quote_identifier(name)
@@ -277,6 +297,7 @@ def collect_column_counts(
     described_columns: list[tuple[Any, ...]],
     sample_rows: list[dict[str, Any]],
     profile_mode: ProfileMode,
+    use_approx_unique_counts: bool,
 ) -> dict[str, dict[str, int]]:
     if not described_columns:
         return {}
@@ -290,20 +311,12 @@ def collect_column_counts(
         )
     for name, duckdb_type, *_ in described_columns:
         if profile_mode == "full":
-            quoted = quote_identifier(name)
-            safe_name = safe_alias(name)
-            projections.append(
-                f'COUNT(DISTINCT {quoted}) FILTER (WHERE {quoted} IS NOT NULL) AS "{safe_name}__unique_count"'
-            )
+            projections.append(build_unique_count_projection(name, duckdb_type, sample_rows, use_approx_unique_counts))
             continue
 
         sample_unique_count = count_sample_uniques(sample_rows, name)
         if should_collect_exact_unique_count(name, duckdb_type, sample_unique_count):
-            quoted = quote_identifier(name)
-            safe_name = safe_alias(name)
-            projections.append(
-                f'COUNT(DISTINCT {quoted}) FILTER (WHERE {quoted} IS NOT NULL) AS "{safe_name}__unique_count"'
-            )
+            projections.append(build_unique_count_projection(name, duckdb_type, sample_rows, False))
         else:
             deferred_unique_counts[name] = max(sample_unique_count, 51)
 
@@ -452,6 +465,31 @@ def build_boolean_stats(connection, quoted: str) -> BooleanStats:
 
 def supports_cardinality_drift(duckdb_type: str) -> bool:
     return detect_type_from_duckdb(duckdb_type) in {"string", "bool"}
+
+
+def should_use_approx_unique_counts(prepared: PreparedSource, profile_mode: ProfileMode) -> bool:
+    return profile_mode == "full" and prepared.format == "parquet" and prepared.size_bytes >= APPROX_UNIQUE_COUNT_SIZE_BYTES
+
+
+def build_unique_count_projection(
+    name: str,
+    duckdb_type: str,
+    sample_rows: list[dict[str, Any]],
+    use_approx_unique_counts: bool,
+) -> str:
+    quoted = quote_identifier(name)
+    safe_name = safe_alias(name)
+    if use_approx_unique_counts and should_use_approx_unique_count(name, duckdb_type, sample_rows):
+        return f'APPROX_COUNT_DISTINCT({quoted}) FILTER (WHERE {quoted} IS NOT NULL) AS "{safe_name}__unique_count"'
+    return f'COUNT(DISTINCT {quoted}) FILTER (WHERE {quoted} IS NOT NULL) AS "{safe_name}__unique_count"'
+
+
+def should_use_approx_unique_count(column_name: str, duckdb_type: str, sample_rows: list[dict[str, Any]]) -> bool:
+    if detect_type_from_duckdb(duckdb_type) == "bool":
+        return False
+    if is_identifier_column_name(column_name):
+        return True
+    return count_sample_uniques(sample_rows, column_name) > 50
 
 
 def should_collect_exact_unique_count(column_name: str, duckdb_type: str, sample_unique_count: int) -> bool:

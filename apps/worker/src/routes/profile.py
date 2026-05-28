@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from core.stats import prepare_url_source, profile_dataset
-from storage.runtime import job_workspace
+from core.stats import detect_format, prepare_url_source, profile_dataset
+from storage.runtime import job_workspace, persist_upload, upload_sha256, uploaded_temp_path
 
 router = APIRouter(tags=["profile"])
 
@@ -22,9 +24,16 @@ async def profile_endpoint(
     try:
         with job_workspace() as workspace:
             if file:
-                destination = workspace / (file.filename or "upload")
-                destination.write_bytes(await file.read())
-                response = profile_dataset(destination, format, sampleSize, sampleMode)
+                source_path = uploaded_temp_path(file)
+                filename = file.filename or "upload"
+                resolved_format = format or detect_format(Path(filename))
+                source_sha256 = None
+                if source_path is None:
+                    destination = workspace / filename
+                    source_path = await persist_upload(file, destination)
+                else:
+                    source_sha256 = await upload_sha256(file)
+                response = profile_dataset(source_path, resolved_format, sampleSize, sampleMode, source_sha256=source_sha256)
             else:
                 prepared = prepare_url_source(url or "", workspace, format)
                 response = profile_dataset(prepared.path, prepared.format, sampleSize, sampleMode)
