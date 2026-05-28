@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { ProfileResult } from "@dataprofile/shared-types";
 import { samples, type SampleDescriptor } from "@dataprofile/shared-worker-runtime";
 import { Panel } from "@dataprofile/shared-ui";
 
+import { ColumnsTable } from "./columns-table";
+import { SampleGrid } from "./sample-grid";
+import { SchemaViewer } from "./schema-viewer";
 import { buildProfileHtml, buildProfileMarkdown } from "../lib/profile-report";
 
 const tabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies"] as const;
@@ -300,56 +303,11 @@ export function ProfilePlayground() {
               ) : null}
 
               {activeTab === "Columns" ? (
-                <div className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white/80">
-                  <div className="grid grid-cols-[1.6fr_0.8fr_0.8fr_1fr_1fr] gap-3 border-b border-[var(--border)] px-4 py-3 text-xs uppercase tracking-[0.2em] text-black/45">
-                    <span>Column</span>
-                    <span>Type</span>
-                    <span>Null %</span>
-                    <span>Unique %</span>
-                    <span>Signals</span>
-                  </div>
-                  <div className="max-h-[26rem] overflow-auto">
-                    {profile.columns.map((column) => (
-                      <div
-                        key={column.name}
-                        className="grid grid-cols-[1.6fr_0.8fr_0.8fr_1fr_1fr] gap-3 border-b border-[var(--border)] px-4 py-4 text-sm last:border-b-0"
-                      >
-                        <div>
-                          <p className="font-semibold">{column.name}</p>
-                          <p className="mt-1 text-xs text-black/55">
-                            {column.topValues
-                              .slice(0, 3)
-                              .map((item) => `${String(item.value)} (${item.count})`)
-                              .join(", ")}
-                          </p>
-                        </div>
-                        <span>{column.inferredType}</span>
-                        <span>{column.nullPct.toFixed(1)}%</span>
-                        <span>{column.uniquePct.toFixed(1)}%</span>
-                        <span className="flex flex-wrap gap-2">
-                          {column.piiFlags.map((flag) => (
-                            <Badge key={`${column.name}-${flag}`} tone="alert">
-                              {flag}
-                            </Badge>
-                          ))}
-                          {column.anomalies.map((anomaly) => (
-                            <Badge key={`${column.name}-${anomaly}`} tone="muted">
-                              {anomaly}
-                            </Badge>
-                          ))}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ColumnsTable columns={profile.columns} />
               ) : null}
 
               {activeTab === "Schema" ? (
-                <div className="rounded-[1.5rem] border border-[var(--border)] bg-[#111111] p-4 text-xs text-[#d7f7ec]">
-                  <pre className="overflow-auto whitespace-pre-wrap">
-                    {JSON.stringify(profile.schema, null, 2)}
-                  </pre>
-                </div>
+                <SchemaViewer schema={profile.schema} />
               ) : null}
 
               {activeTab === "Sample" ? (
@@ -362,32 +320,7 @@ export function ProfilePlayground() {
                     />
                     Auto-redact flagged PII columns
                   </label>
-                  <div className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white/80">
-                    <div className="overflow-auto">
-                      <table className="min-w-full border-collapse text-sm">
-                        <thead className="bg-[var(--accent-soft)] text-left text-xs uppercase tracking-[0.2em] text-black/55">
-                          <tr>
-                            {Object.keys(profile.sampleRows[0] ?? {}).map((columnName) => (
-                              <th key={columnName} className="px-4 py-3 font-medium">
-                                {columnName}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {profile.sampleRows.map((row, index) => (
-                            <tr key={`sample-row-${index}`} className="border-t border-[var(--border)]">
-                              {Object.entries(row).map(([columnName, value]) => (
-                                <td key={`${index}-${columnName}`} className="px-4 py-3 align-top text-black/75">
-                                  {renderSampleValue(value, redactSamples && piiColumns.has(columnName))}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <SampleGrid piiColumns={piiColumns} redactSamples={redactSamples} rows={profile.sampleRows} />
                 </div>
               ) : null}
 
@@ -403,9 +336,12 @@ export function ProfilePlayground() {
                         <p className="font-semibold">{column.name}</p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {column.anomalies.map((anomaly) => (
-                            <Badge key={`${column.name}-${anomaly}`} tone="alert">
+                            <span
+                              key={`${column.name}-${anomaly}`}
+                              className="rounded-full bg-[#fde9dd] px-3 py-1 text-xs text-[#8f3b0e]"
+                            >
                               {anomaly}
-                            </Badge>
+                            </span>
                           ))}
                         </div>
                       </div>
@@ -469,38 +405,6 @@ function MetricCard({ label, value }: { label: string; value: string }) {
       <p className="mt-3 text-3xl font-semibold">{value}</p>
     </div>
   );
-}
-
-function Badge({
-  children,
-  tone
-}: {
-  children: ReactNode;
-  tone: "alert" | "muted";
-}) {
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs ${
-        tone === "alert" ? "bg-[#fde9dd] text-[#8f3b0e]" : "bg-[var(--accent-soft)] text-[var(--accent)]"
-      }`}
-    >
-      {children}
-    </span>
-  );
-}
-
-function renderSampleValue(value: unknown, shouldRedact: boolean) {
-  if (value === null || value === undefined) {
-    return "null";
-  }
-  if (!shouldRedact) {
-    return String(value);
-  }
-  const text = String(value);
-  if (text.length <= 4) {
-    return "[redacted]";
-  }
-  return `${text.slice(0, 2)}[redacted]${text.slice(-2)}`;
 }
 
 function ExportButton({
