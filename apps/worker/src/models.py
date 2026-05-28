@@ -118,3 +118,21 @@ class DriftResponse(BaseModel):
     rangeChanges: list[DriftChange]
     cardinalityChanges: list[DriftChange]
     changes: list[DriftChange]
+
+
+class ShareCreateRequest(BaseModel):
+    kind: Literal["profile", "drift"]
+    payload: dict[str, Any]
+
+
+class ShareCreateResponse(BaseModel):
+    token: str
+    kind: Literal["profile", "drift"]
+    expiresAt: str
+
+
+class ShareFetchResponse(BaseModel):
+    token: str
+    kind: Literal["profile", "drift"]
+    payload: dict[str, Any]
+    expiresAt: str
