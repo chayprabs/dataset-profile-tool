@@ -6,6 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
+    "start": "next start",
     "test": "vitest run",
     "typecheck": "node ./scripts/ensure-next-types.mjs && tsc --project tsconfig.json --noEmit"
   },

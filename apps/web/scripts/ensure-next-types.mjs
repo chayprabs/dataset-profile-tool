@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,3 +23,6 @@ for (const relativePath of files) {
   await mkdir(dirname(filePath), { recursive: true });
   await writeFile(filePath, "export {};\n");
 }
+
+const tsbuildInfoPath = fileURLToPath(new globalThis.URL("../tsconfig.tsbuildinfo", import.meta.url));
+await rm(tsbuildInfoPath, { force: true });

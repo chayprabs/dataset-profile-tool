@@ -4,7 +4,7 @@ DataProfile is an open-source online dataset profile tool for CSV, TSV, JSON, JS
 
 ![DataProfile home UI](docs/images/dataprofile-home.png)
 
-Hosted app: `https://data-profile.Standalone Tool Portfolio`
+Hosted app: [DataProfile](https://data-profile.Standalone Tool Portfolio)
 
 ## Workspace
 
@@ -38,7 +38,7 @@ The web app runs on `http://localhost:3000` and the worker health check is `http
    ```bash
    pnpm build
    python -m uvicorn main:app --app-dir apps/worker/src --host 0.0.0.0 --port 8080
-   pnpm --filter @dataprofile/web start -- --hostname 0.0.0.0 --port 3000
+   pnpm --dir apps/web start -- --hostname 0.0.0.0 --port 3000
    ```
 
 3. Or run the stack with Docker Compose:
