@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from core.drift import diff_profiles
-from core.stats import detect_format, prepare_url_source, profile_dataset
+from core.stats import detect_format, profile_dataset
 from storage.runtime import job_workspace, persist_upload, upload_sha256, uploaded_temp_path
 
 router = APIRouter(tags=["drift"])
@@ -41,8 +41,7 @@ async def drift_endpoint(
                 source_sha256=before_sha256,
             )
         else:
-            prepared_before = prepare_url_source(before_url or "", workspace / "before", before_format)
-            before_profile = profile_dataset(prepared_before.path, prepared_before.format, profile_mode="drift")
+            before_profile = profile_dataset(before_url or "", before_format, profile_mode="drift")
 
         if after_file:
             after_source_path = uploaded_temp_path(after_file)
@@ -61,7 +60,6 @@ async def drift_endpoint(
                 source_sha256=after_sha256,
             )
         else:
-            prepared_after = prepare_url_source(after_url or "", workspace / "after", after_format)
-            after_profile = profile_dataset(prepared_after.path, prepared_after.format, profile_mode="drift")
+            after_profile = profile_dataset(after_url or "", after_format, profile_mode="drift")
 
     return diff_profiles(before_profile, after_profile)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from core.stats import prepare_url_source, profile_dataset
+from core.stats import profile_dataset
 from storage.runtime import job_workspace
 
 router = APIRouter(tags=["schema"])
@@ -22,6 +22,5 @@ async def schema_infer_endpoint(
             destination.write_bytes(await file.read())
             profile = profile_dataset(destination, format)
         else:
-            prepared = prepare_url_source(url or "", workspace, format)
-            profile = profile_dataset(prepared.path, prepared.format)
+            profile = profile_dataset(url or "", format)
     return profile.schemaDocument

@@ -159,6 +159,18 @@ Report artifacts were generated successfully, and the current local audit satisf
 
 - GitHub repository topics now include: `data-profiling`, `csv`, `parquet`, `jsonl`, `avro`, `sqlite`, `json-schema`, `schema-inference`, `data-quality`, `eda`, `schema-drift`, `duckdb`, `dataset-profiler`, `online-tool`.
 - README now includes the required first-100-word terms, a real product screenshot, self-host instructions, and the release-image publication path. The hosted production URL is still pending and is called out explicitly instead of pointing at a placeholder domain.
+- Remote CSV and drift URLs now profile directly through DuckDB `httpfs` without creating a local download copy, covered in `apps/worker/tests/test_remote_sources.py`.
+- `python scripts/verify_privacy_security.py` now exercises the live worker against `pii-laden.csv` and remote URL fixtures, then fails if raw PII sample values appear in worker logs.
+- Latest `pnpm verify:privacy-security` result:
+
+```text
+workerLogRedaction.status: pass
+workerLogRedaction.leakedValues: []
+remoteUrlProfile.status: pass
+remoteUrlProfile.rowCount: 5
+remoteUrlDrift.status: pass
+remoteUrlDrift.added: ["loyalty_points"]
+```
 - Local production headers from `next start` include:
 
 ```text
@@ -174,6 +186,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 - Worker memory-cap configuration is now surfaced by `/v1/health`, and sampled worker-process RSS stayed well below `4096 MB` for `100 MB CSV`, `100 MB drift`, and `1 GB Parquet`. The remaining gap is methodological hardening: we should decide whether the external RSS probe should replace the older in-process soak in the formal checklist runbook.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and first successful release-image publish are still pending.
+- Privacy evidence is stronger now: remote URL handling no longer downloads local copies before profiling, and the live worker log check did not leak any raw values from `pii-laden.csv`.
 - Monaco is now in place with copy/download controls, and both the sample grid and columns table are virtualized. The remaining UI gap is stronger runtime evidence for those surfaces under larger datasets.
 - Release-size benchmark evidence now exists for the main worker paths, and the core latency gates are currently green locally.
 - Final Appendix B verdict remains open until every Section 3 checkbox has hard evidence.

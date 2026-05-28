@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from core.stats import detect_format, prepare_url_source, profile_dataset
+from core.stats import detect_format, profile_dataset
 from storage.runtime import job_workspace, persist_upload, upload_sha256, uploaded_temp_path
 
 router = APIRouter(tags=["profile"])
@@ -35,8 +35,7 @@ async def profile_endpoint(
                     source_sha256 = await upload_sha256(file)
                 response = profile_dataset(source_path, resolved_format, sampleSize, sampleMode, source_sha256=source_sha256)
             else:
-                prepared = prepare_url_source(url or "", workspace, format)
-                response = profile_dataset(prepared.path, prepared.format, sampleSize, sampleMode)
+                response = profile_dataset(url or "", format, sampleSize, sampleMode)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     return response

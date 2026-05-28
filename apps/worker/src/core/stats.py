@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
-from urllib.request import urlretrieve
+from urllib.request import Request, urlopen
 
 import pyarrow.ipc as pa_ipc
 from fastavro import reader as avro_reader
@@ -69,14 +69,16 @@ DUCKDB_TYPE_MAP = {
 
 @dataclass
 class PreparedSource:
-    path: Path
+    source: Path | str
     format: str
     size_bytes: int
     warnings: list[str]
+    sha256: str
+    local_path: Path | None = None
 
 
 def profile_dataset(
-    path: Path,
+    path: Path | str,
     format_hint: str | None = None,
     sample_size: int = 20,
     sample_mode: str = "head",
@@ -133,7 +135,7 @@ def profile_dataset(
             format=prepared.format,
             sizeBytes=prepared.size_bytes,
             rowCount=row_count,
-            sha256=source_sha256 or sha256_file(prepared.path),
+            sha256=source_sha256 or prepared.sha256,
         ),
         columns=all_columns,
         schema=schema,
@@ -150,7 +152,9 @@ class MaterializedSource:
     arrow_table: Any | None = None
 
 
-def prepare_source(path: Path, format_hint: str | None = None) -> PreparedSource:
+def prepare_source(path: Path | str, format_hint: str | None = None) -> PreparedSource:
+    if isinstance(path, str):
+        return prepare_url_source(path, settings.temp_root, format_hint)
     detected_format = format_hint or detect_format(path)
     warnings: list[str] = []
     working_path = path
@@ -158,20 +162,30 @@ def prepare_source(path: Path, format_hint: str | None = None) -> PreparedSource
         working_path = convert_avro_to_jsonl(path)
         warnings.append("Avro source converted to JSONL for DuckDB profiling.")
     return PreparedSource(
-        path=working_path,
+        source=working_path,
         format=detected_format,
         size_bytes=path.stat().st_size,
         warnings=warnings,
+        sha256=sha256_file(working_path),
+        local_path=working_path,
     )
 
 
 def prepare_url_source(url: str, working_dir: Path, format_hint: str | None = None) -> PreparedSource:
     parsed = urlparse(url)
-    suffix = Path(parsed.path).suffix or ".csv"
-    working_dir.mkdir(parents=True, exist_ok=True)
-    destination = working_dir / f"download{suffix}"
-    urlretrieve(url, destination)
-    return prepare_source(destination, format_hint)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("Remote URLs must use http or https.")
+    detected_format = format_hint or detect_format(Path(parsed.path or "remote.csv"))
+    if detected_format in {"arrow", "avro", "sqlite"}:
+        raise ValueError(f"Remote {detected_format} URLs are not supported yet; upload the file directly.")
+    return PreparedSource(
+        source=url,
+        format=detected_format,
+        size_bytes=fetch_remote_size(url),
+        warnings=["Remote URL profiled through DuckDB httpfs without persisting a local copy."],
+        sha256=hashlib.sha256(url.encode("utf-8")).hexdigest(),
+        local_path=None,
+    )
 
 
 def detect_format(path: Path) -> str:
@@ -190,7 +204,7 @@ def convert_avro_to_jsonl(path: Path) -> Path:
 
 
 def materialize_sources(connection, prepared: PreparedSource, temp_root: Path) -> list[MaterializedSource]:
-    path_sql = sql_string(prepared.path)
+    path_sql = sql_string(prepared.source)
     if prepared.format == "csv":
         return [MaterializedSource(query=f"SELECT * FROM read_csv_auto({path_sql}, sample_size=-1, header=true)")]
     if prepared.format == "tsv":
@@ -204,10 +218,14 @@ def materialize_sources(connection, prepared: PreparedSource, temp_root: Path) -
     if prepared.format == "parquet":
         return [MaterializedSource(query=f"SELECT * FROM read_parquet({path_sql})")]
     if prepared.format == "arrow":
-        with pa_ipc.open_file(prepared.path) as arrow_file:
+        if prepared.local_path is None:
+            raise ValueError("Remote Arrow IPC URLs are not supported yet; upload the file directly.")
+        with pa_ipc.open_file(prepared.local_path) as arrow_file:
             return [MaterializedSource(query="SELECT 1", arrow_table=arrow_file.read_all())]
     if prepared.format == "sqlite":
-        tables = list_sqlite_tables(prepared.path)
+        if prepared.local_path is None:
+            raise ValueError("Remote SQLite URLs are not supported yet; upload the file directly.")
+        tables = list_sqlite_tables(prepared.local_path)
         sources: list[MaterializedSource] = []
         for table_name in tables:
             sources.append(
@@ -592,6 +610,16 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def fetch_remote_size(url: str) -> int:
+    request = Request(url, method="HEAD")
+    try:
+        with urlopen(request, timeout=10) as response:
+            content_length = response.headers.get("Content-Length")
+            return int(content_length) if content_length else 0
+    except Exception:
+        return 0
 
 
 def quote_identifier(value: str) -> str:
