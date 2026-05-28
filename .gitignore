@@ -24,3 +24,5 @@ apps/worker/src/**/*.egg-info/
 **/__pycache__/
 *.pyc
 coverage/
+reports/
+.tmp/

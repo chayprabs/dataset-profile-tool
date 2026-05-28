@@ -17,6 +17,7 @@ This report tracks release-gate evidence for `dataset-profile-tool` against
 - `pnpm build`
 - `pnpm test:worker-coverage`
 - `pnpm verify:local-stack` support added
+- `pnpm lighthouse` support added
 - `python scripts/benchmark_worker.py profile-csv --target-mb 25 --repeats 3` support added
 - `python scripts/benchmark_worker.py profile-parquet --target-mb 25 --repeats 3` support added
 - `python scripts/benchmark_worker.py drift-csv --target-mb 25 --repeats 3` support added
@@ -104,9 +105,21 @@ reason: failed to connect to npipe:////./pipe/dockerDesktopLinuxEngine
 
 This means compose syntax and service wiring are valid, but booting the stack still needs a rerun on a healthy Docker host.
 
+## Lighthouse evidence captured so far
+
+Latest `pnpm lighthouse -- --skip-build` result:
+
+```text
+performance: 100
+accessibility: 100
+best-practices: 100
+seo: 100
+```
+
+Report artifacts were generated successfully, and the current local audit satisfies the Section 3.12 Lighthouse threshold. The only remaining noise on this machine is a Windows Chrome temp-directory cleanup `EPERM` after the report is written.
+
 ## Remaining qualification gaps
 
-- Lighthouse >= 95 across all four categories is not yet recorded.
 - Performance targets for 100 MB CSV, 1 GB Parquet, and 100 MB drift are not yet benchmarked.
 - Worker memory-cap configuration is now surfaced by `/v1/health`, and the soak harness records RSS deltas, but 4 GB cap evidence is not yet recorded against target-size workloads.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
