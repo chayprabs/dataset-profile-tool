@@ -93,16 +93,20 @@ def profile_dataset(
         row_count = 0
         warnings = list(prepared.warnings)
         use_approx_unique_counts = should_use_approx_unique_counts(prepared, profile_mode)
+        use_view_for_active_source = should_use_view_for_active_source(prepared, profile_mode)
         if use_approx_unique_counts:
             warnings.append("Approximate unique counts enabled for large Parquet sources to keep profile latency within budget.")
+        if use_view_for_active_source:
+            warnings.append("Large Parquet source profiled via direct scan view to reduce temp-table memory pressure.")
         for source in sources:
             if source.arrow_table is not None:
                 connection.register("dataprofile_arrow_source", source.arrow_table)
                 source_query = "SELECT * FROM dataprofile_arrow_source"
             else:
                 source_query = source.query
-            connection.execute("DROP TABLE IF EXISTS active_source")
-            connection.execute(f"CREATE OR REPLACE TEMP TABLE active_source AS {source_query}")
+            reset_active_source(connection)
+            active_source_kind = "VIEW" if use_view_for_active_source else "TABLE"
+            connection.execute(f"CREATE OR REPLACE TEMP {active_source_kind} active_source AS {source_query}")
             source_row_count = connection.execute("SELECT COUNT(*) FROM active_source").fetchone()[0]
             row_count += source_row_count
             if profile_mode == "full" and not sample_rows:
@@ -120,7 +124,7 @@ def profile_dataset(
                 warnings.append(source.warning)
             if source.arrow_table is not None:
                 connection.unregister("dataprofile_arrow_source")
-        connection.execute("DROP TABLE IF EXISTS active_source")
+        reset_active_source(connection)
 
     schema = infer_json_schema(all_columns) if profile_mode == "full" else {"type": "object", "properties": {}}
     return ProfileResponse(
@@ -471,6 +475,10 @@ def should_use_approx_unique_counts(prepared: PreparedSource, profile_mode: Prof
     return profile_mode == "full" and prepared.format == "parquet" and prepared.size_bytes >= APPROX_UNIQUE_COUNT_SIZE_BYTES
 
 
+def should_use_view_for_active_source(prepared: PreparedSource, profile_mode: ProfileMode) -> bool:
+    return should_use_approx_unique_counts(prepared, profile_mode)
+
+
 def build_unique_count_projection(
     name: str,
     duckdb_type: str,
@@ -596,3 +604,11 @@ def sql_string(value: Path | str) -> str:
 
 def safe_alias(value: str) -> str:
     return value.replace('"', "").replace(".", "_").replace(" ", "_")
+
+
+def reset_active_source(connection) -> None:
+    for statement in ("DROP VIEW IF EXISTS active_source", "DROP TABLE IF EXISTS active_source"):
+        try:
+            connection.execute(statement)
+        except Exception:
+            continue

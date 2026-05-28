@@ -18,6 +18,7 @@ This report tracks release-gate evidence for `dataset-profile-tool` against
 - `pnpm test:worker-coverage`
 - `pnpm verify:local-stack` support added
 - `pnpm lighthouse` support added
+- `pnpm measure:worker-rss -- <scenario> --target-mb <N>` support added
 - `python scripts/benchmark_worker.py profile-csv --target-mb 25 --repeats 3` support added
 - `python scripts/benchmark_worker.py profile-parquet --target-mb 25 --repeats 3` support added
 - `python scripts/benchmark_worker.py drift-csv --target-mb 25 --repeats 3` support added
@@ -51,7 +52,7 @@ Coverage gate policy is enforced by:
 
 ## Benchmark evidence captured so far
 
-Local benchmark harness now exists at [scripts/benchmark_worker.py](/C:/Users/chait/OneDrive/Desktop/tools-for-github-push/dataset-profile-tool/scripts/benchmark_worker.py).
+Local benchmark harness now exists at [scripts/benchmark_worker.py](/C:/Users/chait/OneDrive/Desktop/tools-for-github-push/dataset-profile-tool/scripts/benchmark_worker.py), and sampled worker-process RSS verification exists at [scripts/measure_worker_peak_rss.py](/C:/Users/chait/OneDrive/Desktop/tools-for-github-push/dataset-profile-tool/scripts/measure_worker_peak_rss.py).
 
 Latest lightweight local sample runs:
 
@@ -77,8 +78,8 @@ profile-parquet --target-mb 100 --repeats 2
   p95Seconds: 10.8631
 
 profile-parquet --target-mb 1000 --repeats 1
-  meanSeconds: 26.3405
-  p95Seconds: 26.3405
+  meanSeconds: 24.6330
+  p95Seconds: 24.6330
 
 drift-csv --target-mb 5 --repeats 2
   meanSeconds: 3.7346
@@ -96,6 +97,26 @@ memory-soak-csv --target-mb 100 --iterations 3
 ```
 
 This is now enough evidence to mark the three main latency gates as locally satisfied on this machine: `100 MB CSV <= 5s p95`, `100 MB drift <= 12s p95`, and `1 GB Parquet <= 30s p95`. The worker gets there by reusing rolled multipart temp files for large uploads, using a lean drift profile path, and switching to approximate unique counts for clearly high-cardinality columns on very large Parquet sources with an explicit warning. The soak run also stays well below the 4 GB process cap, but the retained RSS delta on Windows is large enough that memory behavior still needs another investigation pass before calling it fully qualified.
+
+## Worker peak RSS evidence
+
+The in-process benchmark harness is conservative for latency and useful for regression tracking, but its RSS values include the client and worker in the same Python process. The worker-only memory check now uses an external uvicorn process and sampled RSS:
+
+```text
+measure_worker_peak_rss.py profile-csv --target-mb 100
+  seconds: 4.9953
+  peakRssMb: 318.03
+
+measure_worker_peak_rss.py drift-csv --target-mb 100
+  seconds: 9.0736
+  peakRssMb: 276.81
+
+measure_worker_peak_rss.py profile-parquet --target-mb 1000
+  seconds: 24.8121
+  peakRssMb: 387.51
+```
+
+This sampled worker-process evidence is currently the strongest proof we have for Section 3.12 memory behavior on this machine, and all three measured scenarios remained far below the configured `4096 MB` cap.
 
 ## Docker verification evidence captured so far
 
@@ -126,7 +147,7 @@ Report artifacts were generated successfully, and the current local audit satisf
 ## Remaining qualification gaps
 
 - `100 MB CSV`, `100 MB drift`, and `1 GB Parquet` now have passing local evidence.
-- Worker memory-cap configuration is now surfaced by `/v1/health`, and the soak harness recorded a `100 MB` run well below the cap, but the `+323.62 MB` retained RSS delta still needs follow-up before we can claim clean memory behavior.
+- Worker memory-cap configuration is now surfaced by `/v1/health`, and sampled worker-process RSS stayed well below `4096 MB` for `100 MB CSV`, `100 MB drift`, and `1 GB Parquet`. The remaining gap is methodological hardening: we should decide whether the external RSS probe should replace the older in-process soak in the formal checklist runbook.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and release-artifact checks are still pending.
 - Monaco is now in place, but the Columns table still needs stronger evidence for full checklist-grade virtualization behavior under larger datasets.
@@ -135,7 +156,7 @@ Report artifacts were generated successfully, and the current local audit satisf
 
 ## Next verification sweep
 
-1. Investigate retained RSS after repeated `100 MB` profiles and decide whether the issue is process reuse, DuckDB allocator behavior, or benchmark methodology.
+1. Decide whether to promote the external worker RSS probe into the primary Section 3 memory-check runbook and trim the older in-process soak wording accordingly.
 2. Verify Docker compose boot and health endpoints with logs captured.
 3. Complete hosted URL, TLS, and deployment verification evidence.
 4. Re-run Section 3 checklist item by item and update this report with concrete outputs.
