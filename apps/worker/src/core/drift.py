@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from models import DriftChange, DriftResponse, ProfileResponse
+from models import ColumnProfile, DriftChange, DriftResponse, ProfileResponse
 
 
 def diff_profiles(before: ProfileResponse, after: ProfileResponse) -> DriftResponse:
@@ -33,7 +33,7 @@ def diff_profiles(before: ProfileResponse, after: ProfileResponse) -> DriftRespo
                     },
                 )
             )
-        if before_column.numeric and after_column.numeric:
+        if before_column.numeric and after_column.numeric and not is_identifier_like(column_name, before_column, after_column):
             if before_column.numeric.max != after_column.numeric.max:
                 severity = "additive" if (after_column.numeric.max or 0) >= (before_column.numeric.max or 0) else "breaking"
                 range_changes.append(
@@ -46,7 +46,9 @@ def diff_profiles(before: ProfileResponse, after: ProfileResponse) -> DriftRespo
                         after=after_column.numeric.max,
                     )
                 )
-        if before_column.uniqueCount != after_column.uniqueCount:
+        if before_column.uniqueCount != after_column.uniqueCount and should_flag_cardinality_change(
+            column_name, before_column, after_column
+        ):
             delta = after_column.uniqueCount - before_column.uniqueCount
             severity = "additive" if delta >= 0 else "breaking"
             cardinality_changes.append(
@@ -100,3 +102,20 @@ def classify_type_severity(before_type: str, after_type: str) -> str:
     if before_type == after_type:
         return "compatible"
     return "breaking"
+
+
+def is_identifier_like(column_name: str, before_column: ColumnProfile, after_column: ColumnProfile) -> bool:
+    normalized_name = column_name.lower()
+    if normalized_name == "id" or normalized_name.endswith("_id"):
+        return True
+    return False
+
+
+def should_flag_cardinality_change(column_name: str, before_column: ColumnProfile, after_column: ColumnProfile) -> bool:
+    if is_identifier_like(column_name, before_column, after_column):
+        return False
+    if before_column.piiFlags or after_column.piiFlags:
+        return False
+    if before_column.inferredType not in {"string", "bool"} or after_column.inferredType not in {"string", "bool"}:
+        return False
+    return max(before_column.uniqueCount, after_column.uniqueCount) <= 50
