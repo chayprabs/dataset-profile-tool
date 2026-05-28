@@ -155,6 +155,29 @@ seo: 100
 
 Report artifacts were generated successfully, and the current local audit satisfies the Section 3.12 Lighthouse threshold. The only remaining noise on this machine is a Windows Chrome temp-directory cleanup `EPERM` after the report is written.
 
+## Acceptance fixture evidence
+
+Latest `pnpm verify:acceptance` result:
+
+```text
+A1: pass
+  all 13 bundled samples profiled within their target thresholds
+  slowest sample: anomaly-lab.csv at 2.0336s
+
+A2: pass
+  pnpm --dir apps/web exec vitest run app/schema-roundtrip.test.ts
+  2 passed
+
+A3: pass
+  added: ["loyalty_points"]
+  rangeColumns: ["spend"]
+  cardinalityColumns: ["tier"]
+```
+
+This gives us a single reproducible command for PRD Section 20 rather than relying on separate nearby tests and benchmark notes.
+
+The verifier also flushed out and helped confirm a regression fix on the Avro path: profiling `users.avro` no longer leaves a sibling `users.jsonl` artifact in the source directory, because conversion now happens inside the per-job temp area.
+
 ## Security and repo metadata evidence
 
 - GitHub repository topics now include: `data-profiling`, `csv`, `parquet`, `jsonl`, `avro`, `sqlite`, `json-schema`, `schema-inference`, `data-quality`, `eda`, `schema-drift`, `duckdb`, `dataset-profiler`, `online-tool`.
@@ -187,6 +210,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and first successful release-image publish are still pending.
 - Privacy evidence is stronger now: remote URL handling no longer downloads local copies before profiling, and the live worker log check did not leak any raw values from `pii-laden.csv`.
+- Acceptance fixture evidence is now explicit through `pnpm verify:acceptance`, and the current run is green for A1, A2, and A3.
 - Monaco is now in place with copy/download controls, and both the sample grid and columns table are virtualized. The remaining UI gap is stronger runtime evidence for those surfaces under larger datasets.
 - Release-size benchmark evidence now exists for the main worker paths, and the core latency gates are currently green locally.
 - Final Appendix B verdict remains open until every Section 3 checkbox has hard evidence.

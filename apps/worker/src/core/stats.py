@@ -85,9 +85,9 @@ def profile_dataset(
     profile_mode: ProfileMode = "full",
     source_sha256: str | None = None,
 ) -> ProfileResponse:
-    prepared = prepare_source(path, format_hint)
     job_id = str(uuid.uuid4())
     temp_root = settings.temp_root / job_id
+    prepared = prepare_source(path, format_hint, temp_root)
     with duckdb_session(temp_root) as connection:
         sources = materialize_sources(connection, prepared, temp_root)
         sample_rows: list[dict[str, Any]] = []
@@ -152,14 +152,16 @@ class MaterializedSource:
     arrow_table: Any | None = None
 
 
-def prepare_source(path: Path | str, format_hint: str | None = None) -> PreparedSource:
+def prepare_source(path: Path | str, format_hint: str | None = None, working_dir: Path | None = None) -> PreparedSource:
     if isinstance(path, str):
         return prepare_url_source(path, settings.temp_root, format_hint)
     detected_format = format_hint or detect_format(path)
     warnings: list[str] = []
     working_path = path
     if detected_format == "avro":
-        working_path = convert_avro_to_jsonl(path)
+        if working_dir is None:
+            raise ValueError("Avro profiling requires a working directory.")
+        working_path = convert_avro_to_jsonl(path, working_dir)
         warnings.append("Avro source converted to JSONL for DuckDB profiling.")
     return PreparedSource(
         source=working_path,
@@ -194,8 +196,9 @@ def detect_format(path: Path) -> str:
     raise ValueError(f"Unsupported format for {path.name}")
 
 
-def convert_avro_to_jsonl(path: Path) -> Path:
-    output_path = path.with_suffix(".jsonl")
+def convert_avro_to_jsonl(path: Path, working_dir: Path) -> Path:
+    working_dir.mkdir(parents=True, exist_ok=True)
+    output_path = working_dir / f"{path.stem}.jsonl"
     with path.open("rb") as input_handle, output_path.open("w", encoding="utf-8") as output_handle:
         for record in avro_reader(input_handle):
             output_handle.write(json.dumps(record, default=str))
