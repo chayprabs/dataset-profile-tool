@@ -56,7 +56,26 @@ export function SampleGrid({
   });
 
   return (
-    <div className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white/80">
+    <div className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white/82 shadow-sm shadow-black/5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[#faf4ea] px-4 py-3 text-sm">
+        <div>
+          <p className="ui-kicker">Sample Grid</p>
+          <p className="mt-1 text-xs text-black/55">
+            Virtualized rows with sortable columns and default-safe redaction.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1">
+            {rows.length} rows
+          </span>
+          <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1">
+            {keys.length} columns
+          </span>
+          <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1">
+            {redactSamples ? "Redaction on" : "Redaction off"}
+          </span>
+        </div>
+      </div>
       <div
         className="grid border-b border-[var(--border)] bg-[var(--accent-soft)] text-left text-xs uppercase tracking-[0.2em] text-black/55"
         style={{ gridTemplateColumns: templateColumns }}
@@ -82,7 +101,9 @@ export function SampleGrid({
             return (
               <div
                 key={row.id}
-                className="absolute left-0 grid w-full border-b border-[var(--border)] text-sm text-black/75"
+                className={`absolute left-0 grid w-full border-b border-[var(--border)] text-sm text-black/75 ${
+                  virtualRow.index % 2 === 0 ? "bg-white/72" : "bg-[#f8f1e6]"
+                }`}
                 style={{
                   gridTemplateColumns: templateColumns,
                   transform: `translateY(${virtualRow.start}px)`

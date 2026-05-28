@@ -87,45 +87,67 @@ export function DriftPlayground() {
     <section className="grid gap-6 lg:grid-cols-[1.35fr_0.85fr]">
       <Panel title="Drift">
         <div className="space-y-6">
-          <div className="rounded-[1.75rem] border border-[var(--border)] bg-white/75 p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="rounded-[1.75rem] border border-[var(--border)] bg-white/78 p-5 shadow-sm shadow-black/5">
+            <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--accent)]">
-                  Snapshot Compare
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold">
-                  Compare two dataset snapshots and classify the change surface.
+                <p className="ui-kicker">Snapshot Compare</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.025em]">
+                  Compare two snapshots and keep the change surface readable.
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-black/65">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-black/65">
                   Run drift from curated fixtures, uploaded files, or remote URLs and export a
                   report your team can review without rerunning the profile job.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                  <span className="rounded-full border border-[var(--border)] bg-[#faf4ea] px-3 py-1">
+                    Source: {sourceMode}
+                  </span>
+                  {sourceMode === "sample" ? (
+                    <>
+                      <span className="rounded-full border border-[var(--border)] bg-[#faf4ea] px-3 py-1">
+                        Before: {beforeSample.label}
+                      </span>
+                      <span className="rounded-full border border-[var(--border)] bg-[#faf4ea] px-3 py-1">
+                        After: {afterSample.label}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
               </div>
-              <button
-                className="rounded-full border border-[var(--accent)] bg-[var(--accent)] px-4 py-2 text-sm text-white transition hover:opacity-90 disabled:opacity-50"
-                disabled={isLoading}
-                onClick={() => void runDrift()}
-                type="button"
-              >
-                {isLoading ? "Comparing..." : "Run Drift"}
-              </button>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              {sourceModes.map((mode) => (
+              <div className="rounded-[1.5rem] border border-[var(--border)] bg-[#faf4ea] p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-black/45">Actions</p>
                 <button
-                  key={mode}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    sourceMode === mode
-                      ? "bg-[#1a4037] text-white"
-                      : "border border-[var(--border)] bg-white text-black/75"
-                  }`}
-                  onClick={() => setSourceMode(mode)}
+                  className="mt-3 w-full rounded-full border border-[var(--accent)] bg-[var(--accent)] px-4 py-3 text-sm text-white transition hover:opacity-90 disabled:opacity-50"
+                  disabled={isLoading}
+                  onClick={() => void runDrift()}
                   type="button"
                 >
-                  {mode}
+                  {isLoading ? "Comparing..." : "Run Drift"}
                 </button>
-              ))}
+                <p className="mt-3 text-xs leading-5 text-black/55">
+                  Use the golden week-one and week-two fixtures first to confirm the expected classification path.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-[1.35rem] border border-[var(--border)] bg-[#faf4ea] p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-black/45">Source mode</p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {sourceModes.map((mode) => (
+                  <button
+                    key={mode}
+                    className={`rounded-full px-4 py-2 text-sm transition ${
+                      sourceMode === mode
+                        ? "bg-[#1a4037] text-white"
+                        : "border border-[var(--border)] bg-white text-black/75"
+                    }`}
+                    onClick={() => setSourceMode(mode)}
+                    type="button"
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {sourceMode === "sample" ? (
@@ -204,9 +226,9 @@ export function DriftPlayground() {
               ) : null}
 
               <div className="grid gap-4 md:grid-cols-3">
-                <MetricCard label="Total changes" value={drift.changes.length.toString()} />
-                <MetricCard label="Breaking" value={countSeverity(drift, "breaking").toString()} />
-                <MetricCard label="Compatible/Additive" value={countNonBreaking(drift).toString()} />
+                <MetricCard label="Total changes" subtitle="All detected structural deltas" value={drift.changes.length.toString()} />
+                <MetricCard label="Breaking" subtitle="Likely downstream contract work" value={countSeverity(drift, "breaking").toString()} />
+                <MetricCard label="Compatible/Additive" subtitle="Wider or newly observed surface" value={countNonBreaking(drift).toString()} />
               </div>
 
               <div className="grid gap-4">
@@ -352,10 +374,11 @@ function UrlSelector({
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({ label, subtitle, value }: { label: string; subtitle: string; value: string }) {
   return (
     <div className="rounded-[1.5rem] border border-[var(--border)] bg-white/80 p-4">
       <p className="text-xs uppercase tracking-[0.2em] text-black/45">{label}</p>
+      <p className="mt-2 text-xs leading-5 text-black/50">{subtitle}</p>
       <p className="mt-3 text-3xl font-semibold">{value}</p>
     </div>
   );

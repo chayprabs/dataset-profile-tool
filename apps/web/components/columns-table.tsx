@@ -91,7 +91,25 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white/80">
+      <div className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white/82 shadow-sm shadow-black/5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[#faf4ea] px-4 py-3 text-sm">
+          <div>
+            <p className="ui-kicker">Column Lens</p>
+            <p className="mt-1 text-xs text-black/55">
+              Sort the full profile surface, then expand one column for deeper inspection.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1">
+              {columns.length} columns
+            </span>
+            {selectedColumn ? (
+              <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1">
+                Focus: {selectedColumn.name}
+              </span>
+            ) : null}
+          </div>
+        </div>
         <div className="grid grid-cols-[1.6fr_0.8fr_0.8fr_1fr_1fr] gap-3 border-b border-[var(--border)] px-4 py-3 text-xs uppercase tracking-[0.2em] text-black/45">
           {table.getFlatHeaders().map((header) => (
             <button
@@ -108,8 +126,8 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
           {table.getRowModel().rows.map((row) => (
             <button
               key={row.id}
-              className={`grid w-full grid-cols-[1.6fr_0.8fr_0.8fr_1fr_1fr] gap-3 border-b border-[var(--border)] px-4 py-4 text-left text-sm transition hover:bg-[var(--accent-soft)] last:border-b-0 ${
-                row.original.name === selectedColumn?.name ? "bg-[var(--accent-soft)]/80" : ""
+                className={`grid w-full grid-cols-[1.6fr_0.8fr_0.8fr_1fr_1fr] gap-3 border-b border-[var(--border)] px-4 py-4 text-left text-sm transition hover:bg-[var(--accent-soft)] last:border-b-0 ${
+                row.original.name === selectedColumn?.name ? "bg-[var(--accent-soft)]/80" : "bg-white/72"
               }`}
               onClick={() =>
                 setSelectedColumnName((current) => (current === row.original.name ? null : row.original.name))
@@ -185,15 +203,21 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
           <section className="rounded-[1.5rem] border border-[var(--border)] bg-white/80 p-5">
             <p className="text-sm font-medium">Top values</p>
             <div className="mt-4 space-y-3">
-              {selectedColumn.topValues.map((value) => (
-                <div
-                  key={`${selectedColumn.name}-${String(value.value)}`}
-                  className="rounded-[1.25rem] border border-[var(--border)] bg-[#fbf8f2] p-3"
-                >
-                  <p className="truncate text-sm font-medium">{String(value.value)}</p>
-                  <p className="mt-1 text-xs text-black/55">{value.count} rows</p>
+              {selectedColumn.topValues.length > 0 ? (
+                selectedColumn.topValues.map((value) => (
+                  <div
+                    key={`${selectedColumn.name}-${String(value.value)}`}
+                    className="rounded-[1.25rem] border border-[var(--border)] bg-[#fbf8f2] p-3"
+                  >
+                    <p className="truncate text-sm font-medium">{String(value.value)}</p>
+                    <p className="mt-1 text-xs text-black/55">{value.count} rows</p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[1.25rem] border border-dashed border-[var(--border)] bg-[#fbf8f2] p-4 text-sm text-black/55">
+                  No top-value sample was collected for this column in the current mode.
                 </div>
-              ))}
+              )}
             </div>
           </section>
         </div>
