@@ -16,6 +16,7 @@ This report tracks release-gate evidence for `dataset-profile-tool` against
 - `pnpm test`
 - `pnpm build`
 - `pnpm test:worker-coverage`
+- `pnpm verify:local-stack` support added
 - `python scripts/benchmark_worker.py profile-csv --target-mb 25 --repeats 3` support added
 - `python scripts/benchmark_worker.py profile-parquet --target-mb 25 --repeats 3` support added
 - `python scripts/benchmark_worker.py drift-csv --target-mb 25 --repeats 3` support added
@@ -66,12 +67,25 @@ memory-soak-csv --target-mb 5 --iterations 3
 
 This is useful proof that the benchmark and soak harnesses work, but it does **not** satisfy the release targets yet.
 
+## Docker verification evidence captured so far
+
+Latest `pnpm verify:local-stack` result:
+
+```text
+docker-compose.yml config: PASS
+docker-compose.single.yml config: PASS
+docker daemon: VERIFY-DEFERRED
+reason: failed to connect to npipe:////./pipe/dockerDesktopLinuxEngine
+```
+
+This means compose syntax and service wiring are valid, but booting the stack still needs a rerun on a healthy Docker host.
+
 ## Remaining qualification gaps
 
 - Lighthouse >= 95 across all four categories is not yet recorded.
 - Performance targets for 100 MB CSV, 1 GB Parquet, and 100 MB drift are not yet benchmarked.
 - Worker memory-cap configuration is now surfaced by `/v1/health`, and the soak harness records RSS deltas, but 4 GB cap evidence is not yet recorded against target-size workloads.
-- Docker/local-run evidence for Section 3.3 still needs an explicit verification sweep.
+- Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and release-artifact checks are still pending.
 - Monaco is now in place, but the Columns table still needs stronger evidence for full checklist-grade virtualization behavior under larger datasets.
 - Current lightweight benchmark timings are far above the PRD latency targets, so profiling performance still needs focused optimization.

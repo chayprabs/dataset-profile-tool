@@ -26,6 +26,7 @@ Repeatable qualification-oriented commands:
 
 ```bash
 pnpm test:worker-coverage
+pnpm verify:local-stack
 python scripts/benchmark_worker.py profile-csv --target-mb 25 --repeats 3
 python scripts/benchmark_worker.py profile-parquet --target-mb 25 --repeats 3
 python scripts/benchmark_worker.py drift-csv --target-mb 25 --repeats 3

@@ -4,6 +4,23 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+      NEXT_PUBLIC_API_BASE_URL: http://worker:8080
     ports:
       - "3000:3000"
+    depends_on:
+      - worker
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      DATAPROFILE_MAX_UPLOAD_MB: 50
+      DATAPROFILE_JOB_TTL_SECONDS: 900
+      DATAPROFILE_JOB_MEMORY_LIMIT_MB: 4096
+      DATAPROFILE_JOB_CPU_LIMIT_SECONDS: 120
+      DATAPROFILE_JOB_WALL_CLOCK_SECONDS: 120
+      DATAPROFILE_JOB_MAX_OPEN_FILES: 256
+    ports:
+      - "8080:8080"
+    mem_limit: 4g
