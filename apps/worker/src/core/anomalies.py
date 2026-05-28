@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import math
+import re
 import unicodedata
 from collections import Counter
 from typing import Iterable
 
 NULL_TOKENS = {"na", "n/a", "?", "-", "null"}
+HEX_LIKE_RE = re.compile(r"^[0-9a-f]{24,}$", re.IGNORECASE)
 
 
 def shannon_entropy(value: str) -> float:
@@ -33,7 +35,10 @@ def detect_anomalies(column_name: str, values: Iterable[object]) -> list[str]:
     if any(unicodedata.normalize("NFC", value) != value for value in normalized):
         anomalies.append("unicode_normalization_mismatch")
 
-    if normalized and sum(shannon_entropy(value) > 3.8 for value in normalized) >= max(2, len(normalized) // 3):
+    if normalized and (
+        sum(shannon_entropy(value) > 3.8 for value in normalized) >= max(2, len(normalized) // 3)
+        or any(HEX_LIKE_RE.match(value) for value in normalized)
+    ):
         anomalies.append("high_entropy_strings")
 
     if any(value.strip().lower() in NULL_TOKENS for value in normalized):

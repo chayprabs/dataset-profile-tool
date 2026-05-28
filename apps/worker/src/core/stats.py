@@ -70,7 +70,12 @@ class PreparedSource:
     warnings: list[str]
 
 
-def profile_dataset(path: Path, format_hint: str | None = None, sample_size: int = 20) -> ProfileResponse:
+def profile_dataset(
+    path: Path,
+    format_hint: str | None = None,
+    sample_size: int = 20,
+    sample_mode: str = "head",
+) -> ProfileResponse:
     prepared = prepare_source(path, format_hint)
     job_id = str(uuid.uuid4())
     temp_root = settings.temp_root / job_id
@@ -89,7 +94,7 @@ def profile_dataset(path: Path, format_hint: str | None = None, sample_size: int
             connection.execute(f"CREATE OR REPLACE TEMP VIEW active_source AS {source_query}")
             row_count += connection.execute("SELECT COUNT(*) FROM active_source").fetchone()[0]
             if not sample_rows:
-                sample_rows = fetch_sample_rows(connection, sample_size)
+                sample_rows = fetch_sample_rows(connection, sample_size, sample_mode)
             all_columns.extend(profile_columns(connection, source.column_prefix))
             if source.warning:
                 warnings.append(source.warning)
@@ -348,8 +353,14 @@ def build_boolean_stats(connection, quoted: str) -> BooleanStats:
     return BooleanStats(trueCount=int(true_count), falseCount=int(false_count))
 
 
-def fetch_sample_rows(connection, sample_size: int) -> list[dict[str, Any]]:
-    cursor = connection.execute(f"SELECT * FROM active_source LIMIT {sample_size}")
+def fetch_sample_rows(connection, sample_size: int, sample_mode: str) -> list[dict[str, Any]]:
+    if sample_mode == "tail":
+        query = f"SELECT * FROM active_source ORDER BY ALL DESC LIMIT {sample_size}"
+    elif sample_mode == "random":
+        query = f"SELECT * FROM active_source USING SAMPLE {sample_size} ROWS"
+    else:
+        query = f"SELECT * FROM active_source LIMIT {sample_size}"
+    cursor = connection.execute(query)
     columns = [description[0] for description in cursor.description]
     return [dict(zip(columns, row, strict=False)) for row in cursor.fetchall()]
 

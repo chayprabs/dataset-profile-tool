@@ -22,6 +22,20 @@ export const samples: SampleDescriptor[] = [
     path: "/samples/mixed-types.csv"
   },
   {
+    slug: "pii-laden",
+    label: "PII Laden",
+    format: "csv",
+    description: "Synthetic PII fixture for email, phone, SSN, IBAN, and credit card detection.",
+    path: "/samples/pii-laden.csv"
+  },
+  {
+    slug: "anomaly-lab",
+    label: "Anomaly Lab",
+    format: "csv",
+    description: "Adversarial fixture that trips leading zero, mixed date, unicode, null token, and entropy hints.",
+    path: "/samples/anomaly-lab.csv"
+  },
+  {
     slug: "drift-week-1",
     label: "Drift Week 1",
     format: "csv",

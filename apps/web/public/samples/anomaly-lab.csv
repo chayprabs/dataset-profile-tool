@@ -1,0 +1,4 @@
+zip_code,observed_date,unicode_name,status_token,session_hash
+00123,2026-05-01,ñ,NA,a93f1c4428d6cce13f34ea6d5233d4a2
+00045,05/02/2026,mañana,?,b72f1c4428d6cce13f34ea6d5233d4ff
+10001,2026.05.03,café,-,c83f1c4428d6cce13f34ea6d5233d4aa

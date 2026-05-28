@@ -14,6 +14,7 @@ async def profile_endpoint(
     url: str | None = Form(default=None),
     format: str | None = Form(default=None),
     sampleSize: int = Form(default=20),
+    sampleMode: str = Form(default="head"),
 ):
     if not file and not url:
         raise HTTPException(status_code=400, detail="Provide a file or URL.")
@@ -23,10 +24,10 @@ async def profile_endpoint(
             if file:
                 destination = workspace / (file.filename or "upload")
                 destination.write_bytes(await file.read())
-                response = profile_dataset(destination, format, sampleSize)
+                response = profile_dataset(destination, format, sampleSize, sampleMode)
             else:
                 prepared = prepare_url_source(url or "", workspace, format)
-                response = profile_dataset(prepared.path, prepared.format, sampleSize)
+                response = profile_dataset(prepared.path, prepared.format, sampleSize, sampleMode)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     return response
