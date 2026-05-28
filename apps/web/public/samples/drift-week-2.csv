@@ -1,0 +1,4 @@
+customer_id,customer_email,tier,spend,loyalty_points
+1001,devika@example.com,gold,180.50,520
+1002,aman@example.com,platinum,42.00,190
+1003,ria@example.com,bronze,13.99,20

@@ -1,0 +1,4 @@
+customer_id,customer_email,tier,spend
+1001,devika@example.com,gold,120.50
+1002,aman@example.com,silver,42.00
+1003,ria@example.com,bronze,13.99

@@ -1,0 +1,14 @@
+[
+  {
+    "user_id": 1001,
+    "name": "Devika",
+    "email": "devika@example.com",
+    "signup_at": "2026-05-01T10:15:00Z"
+  },
+  {
+    "user_id": 1002,
+    "name": "Aman",
+    "email": "aman@example.com",
+    "signup_at": "2026-05-02T07:10:00Z"
+  }
+]

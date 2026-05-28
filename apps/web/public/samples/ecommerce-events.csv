@@ -1,0 +1,6 @@
+event_id,user_id,customer_email,amount,is_returned,event_time,tier
+evt_001,1001,devika@example.com,120.50,false,2026-05-01T10:15:00Z,gold
+evt_002,1002,aman@example.com,42.00,false,2026-05-01T10:17:00Z,silver
+evt_003,1003,ria@example.com,13.99,true,2026-05-01T11:40:00Z,bronze
+evt_004,1004,arun@example.com,87.10,false,2026-05-02T08:05:00Z,gold
+evt_005,1005,sofia@example.com,15.25,false,2026-05-02T08:11:00Z,silver

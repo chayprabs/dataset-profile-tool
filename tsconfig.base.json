@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "strict": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@dataprofile/shared-types": ["packages/shared-types/src/index.ts"],
+      "@dataprofile/shared-ui": ["packages/shared-ui/src/index.ts"],
+      "@dataprofile/shared-worker-runtime": ["packages/shared-worker-runtime/src/index.ts"]
+    }
+  }
+}

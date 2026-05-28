@@ -1,0 +1,13 @@
+{
+  "name": "dataset-profile-tool",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.4.1",
+  "scripts": {
+    "build": "pnpm --filter @dataprofile/web build && pnpm --filter @dataprofile/shared-types build && pnpm --filter @dataprofile/shared-ui build && pnpm --filter @dataprofile/shared-worker-runtime build",
+    "dev": "pnpm --filter @dataprofile/web dev",
+    "lint": "pnpm --filter @dataprofile/web lint && pnpm --filter @dataprofile/shared-types lint && pnpm --filter @dataprofile/shared-ui lint && pnpm --filter @dataprofile/shared-worker-runtime lint",
+    "test": "pnpm --filter @dataprofile/web test && python -m pytest apps/worker/tests",
+    "typecheck": "pnpm --filter @dataprofile/web typecheck && pnpm --filter @dataprofile/shared-types typecheck && pnpm --filter @dataprofile/shared-ui typecheck && pnpm --filter @dataprofile/shared-worker-runtime typecheck"
+  }
+}
