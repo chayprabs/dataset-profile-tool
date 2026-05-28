@@ -19,6 +19,7 @@ apps/web/tsconfig.tsbuildinfo
 packages/*/dist/
 apps/worker/.pytest_cache/
 apps/worker/.coverage
+apps/worker/coverage.json
 apps/worker/src/**/*.egg-info/
 **/__pycache__/
 *.pyc

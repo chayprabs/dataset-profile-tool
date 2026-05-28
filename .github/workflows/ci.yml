@@ -32,5 +32,7 @@ jobs:
         run: pnpm lint
       - name: Test
         run: pnpm test
+      - name: Worker coverage gate
+        run: pnpm test:worker-coverage
       - name: Build
         run: pnpm build
