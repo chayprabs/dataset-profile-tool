@@ -65,8 +65,8 @@ profile-csv --target-mb 50 --repeats 2
   p95Seconds: 6.0953
 
 profile-csv --target-mb 100 --repeats 2
-  meanSeconds: 8.2746
-  p95Seconds: 10.0990
+  meanSeconds: 3.7079
+  p95Seconds: 3.7449
 
 profile-parquet --target-mb 5 --repeats 2
   meanSeconds: 1.7821
@@ -76,21 +76,26 @@ profile-parquet --target-mb 100 --repeats 2
   meanSeconds: 9.7672
   p95Seconds: 10.8631
 
+profile-parquet --target-mb 1000 --repeats 1
+  meanSeconds: 69.7250
+  p95Seconds: 69.7250
+
 drift-csv --target-mb 5 --repeats 2
   meanSeconds: 3.7346
   p95Seconds: 4.5392
 
 drift-csv --target-mb 100 --repeats 2
-  meanSeconds: 18.2202
-  p95Seconds: 19.3998
+  meanSeconds: 10.9890
+  p95Seconds: 11.0938
 
-memory-soak-csv --target-mb 5 --iterations 3
-  rssBeforeMb: 90.41
-  rssAfterMb: 90.91
-  rssDeltaMb: 0.50
+memory-soak-csv --target-mb 100 --iterations 3
+  rssBeforeMb: 90.14
+  rssAfterMb: 413.76
+  rssDeltaMb: 323.62
+  p95Seconds: 5.3501
 ```
 
-This is useful proof that the benchmark and soak harnesses work and that the worker hot path improved substantially after materializing sources into a temp table and collapsing repeated per-column scans. It still does **not** satisfy the release targets yet because 100 MB CSV and 100 MB drift remain above the checklist thresholds, and 1 GB Parquet evidence is still missing.
+This is now enough evidence to mark two latency gates as locally satisfied on this machine: `100 MB CSV <= 5s p95` and `100 MB drift <= 12s p95`. The remaining performance blocker is `1 GB Parquet <= 30s`, which still misses badly in the current implementation. The soak run also stays well below the 4 GB process cap, but the retained RSS delta on Windows is large enough that memory behavior still needs another investigation pass before calling it fully qualified.
 
 ## Docker verification evidence captured so far
 
@@ -120,17 +125,17 @@ Report artifacts were generated successfully, and the current local audit satisf
 
 ## Remaining qualification gaps
 
-- Performance targets for 100 MB CSV, 1 GB Parquet, and 100 MB drift are not yet benchmarked.
-- Worker memory-cap configuration is now surfaced by `/v1/health`, and the soak harness records RSS deltas, but 4 GB cap evidence is not yet recorded against target-size workloads.
+- `100 MB CSV` and `100 MB drift` now have passing local evidence, but `1 GB Parquet` is still above target at `69.725s`.
+- Worker memory-cap configuration is now surfaced by `/v1/health`, and the soak harness recorded a `100 MB` run well below the cap, but the `+323.62 MB` retained RSS delta still needs follow-up before we can claim clean memory behavior.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and release-artifact checks are still pending.
 - Monaco is now in place, but the Columns table still needs stronger evidence for full checklist-grade virtualization behavior under larger datasets.
-- Benchmarks improved sharply, but release-size benchmark evidence is still missing.
+- Release-size benchmark evidence now exists for the main worker paths, but the Parquet target still fails and needs optimization.
 - Final Appendix B verdict remains open until every Section 3 checkbox has hard evidence.
 
 ## Next verification sweep
 
-1. Add repeatable benchmark commands and capture latency evidence.
-2. Add Lighthouse automation/report artifacts.
+1. Optimize the `1 GB Parquet` profile path and capture a passing rerun.
+2. Investigate retained RSS after repeated `100 MB` profiles and decide whether the issue is process reuse, DuckDB allocator behavior, or benchmark methodology.
 3. Verify Docker compose boot and health endpoints with logs captured.
 4. Re-run Section 3 checklist item by item and update this report with concrete outputs.

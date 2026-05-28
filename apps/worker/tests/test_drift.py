@@ -26,6 +26,22 @@ def test_diff_profiles_matches_week_over_week_golden_changes():
     assert drift.cardinalityChanges[0].severity == "additive"
 
 
+def test_drift_profile_mode_keeps_only_fields_needed_for_diffing():
+    before = profile_dataset(SAMPLES_DIR / "drift-week-1.csv", profile_mode="drift")
+    after = profile_dataset(SAMPLES_DIR / "drift-week-2.csv", profile_mode="drift")
+
+    drift = diff_profiles(before, after)
+    spend_column = next(column for column in after.columns if column.name == "spend")
+
+    assert before.sampleRows == []
+    assert after.sampleRows == []
+    assert before.schemaDocument == {"type": "object", "properties": {}}
+    assert spend_column.numeric is not None
+    assert spend_column.numeric.max == 220.0
+    assert spend_column.topValues == []
+    assert [change.column for change in drift.cardinalityChanges] == ["tier"]
+
+
 def test_drift_endpoint_profiles_files_and_returns_classification():
     client = TestClient(app)
     before_path = SAMPLES_DIR / "drift-week-1.csv"
