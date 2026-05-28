@@ -2,10 +2,89 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional image tag override for manual runs."
+        required: false
+        type: string
+      push_images:
+        description: "Push built images to GHCR."
+        required: false
+        default: false
+        type: boolean
+  release:
+    types:
+      - published
 
 jobs:
-  draft:
+  docker-images:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Release workflow placeholder"
+      - id: vars
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            version="${GITHUB_REF_NAME}"
+            push="true"
+            latest="true"
+          else
+            version="${{ inputs.image_tag }}"
+            if [[ -z "${version}" ]]; then
+              version="manual-${GITHUB_SHA::7}"
+            fi
+            push="${{ inputs.push_images }}"
+            latest="false"
+          fi
+          echo "owner=${owner}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "push=${push}" >> "${GITHUB_OUTPUT}"
+          echo "latest=${latest}" >> "${GITHUB_OUTPUT}"
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        if: steps.vars.outputs.push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: web-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.vars.outputs.owner }}/dataprofile-web
+          tags: |
+            type=raw,value=${{ steps.vars.outputs.version }}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ steps.vars.outputs.latest == 'true' }}
+      - id: worker-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.vars.outputs.owner }}/dataprofile-worker
+          tags: |
+            type=raw,value=${{ steps.vars.outputs.version }}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ steps.vars.outputs.latest == 'true' }}
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: ${{ steps.vars.outputs.push == 'true' }}
+          tags: ${{ steps.web-meta.outputs.tags }}
+          labels: ${{ steps.web-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: ${{ steps.vars.outputs.push == 'true' }}
+          tags: ${{ steps.worker-meta.outputs.tags }}
+          labels: ${{ steps.worker-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

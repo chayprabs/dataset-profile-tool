@@ -4,7 +4,7 @@ DataProfile is an open-source online dataset profile tool for CSV, TSV, JSON, JS
 
 ![DataProfile home UI](docs/images/dataprofile-home.png)
 
-Hosted app: [DataProfile](https://data-profile.Standalone Tool Portfolio)
+Hosted app: deployment pending. Use the local stack at `http://localhost:3000` until a production URL is published.
 
 ## Workspace
 
@@ -53,6 +53,16 @@ The web app runs on `http://localhost:3000` and the worker health check is `http
    curl -sf http://localhost:8080/v1/health
    curl -I http://localhost:3000
    ```
+
+## Release artifacts
+
+Publishing a GitHub Release now builds both container images through `.github/workflows/release.yml`.
+Published tags push:
+
+- `ghcr.io/<owner>/dataprofile-web:<tag>`
+- `ghcr.io/<owner>/dataprofile-worker:<tag>`
+
+Manual `workflow_dispatch` runs can build-only for smoke verification or push with a custom tag.
 
 ## Verification helpers
 

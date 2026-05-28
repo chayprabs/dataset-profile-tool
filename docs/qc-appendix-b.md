@@ -134,6 +134,14 @@ reason: failed to connect to npipe:////./pipe/dockerDesktopLinuxEngine
 
 This means compose syntax and service wiring are valid, but booting the stack still needs a rerun on a healthy Docker host.
 
+## Release artifact evidence captured so far
+
+- `.github/workflows/release.yml` now builds both app images on `release.published`.
+- Manual `workflow_dispatch` runs can either build-only or push custom tags to GHCR.
+- Target image names are `ghcr.io/<owner>/dataprofile-web` and `ghcr.io/<owner>/dataprofile-worker`.
+
+This closes the earlier repository-side release-workflow placeholder, but it does not yet satisfy Section 3.15 by itself. We still need one successful release workflow execution with pushed images recorded as evidence.
+
 ## Lighthouse evidence captured so far
 
 Latest `pnpm lighthouse -- --skip-build` result:
@@ -150,7 +158,7 @@ Report artifacts were generated successfully, and the current local audit satisf
 ## Security and repo metadata evidence
 
 - GitHub repository topics now include: `data-profiling`, `csv`, `parquet`, `jsonl`, `avro`, `sqlite`, `json-schema`, `schema-inference`, `data-quality`, `eda`, `schema-drift`, `duckdb`, `dataset-profiler`, `online-tool`.
-- README now includes the required first-100-word terms, a hosted URL reference, a real product screenshot, and self-host instructions.
+- README now includes the required first-100-word terms, a real product screenshot, self-host instructions, and the release-image publication path. The hosted production URL is still pending and is called out explicitly instead of pointing at a placeholder domain.
 - Local production headers from `next start` include:
 
 ```text
@@ -165,7 +173,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 - `100 MB CSV`, `100 MB drift`, and `1 GB Parquet` now have passing local evidence.
 - Worker memory-cap configuration is now surfaced by `/v1/health`, and sampled worker-process RSS stayed well below `4096 MB` for `100 MB CSV`, `100 MB drift`, and `1 GB Parquet`. The remaining gap is methodological hardening: we should decide whether the external RSS probe should replace the older in-process soak in the formal checklist runbook.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
-- Hosted URL, TLS, deployment, and release-artifact checks are still pending.
+- Hosted URL, TLS, deployment, and first successful release-image publish are still pending.
 - Monaco is now in place with copy/download controls, and both the sample grid and columns table are virtualized. The remaining UI gap is stronger runtime evidence for those surfaces under larger datasets.
 - Release-size benchmark evidence now exists for the main worker paths, and the core latency gates are currently green locally.
 - Final Appendix B verdict remains open until every Section 3 checkbox has hard evidence.
@@ -174,5 +182,6 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 1. Decide whether to promote the external worker RSS probe into the primary Section 3 memory-check runbook and trim the older in-process soak wording accordingly.
 2. Verify Docker compose boot and health endpoints with logs captured.
-3. Complete hosted URL, TLS, and deployment verification evidence.
-4. Re-run Section 3 checklist item by item and update this report with concrete outputs.
+3. Run the release workflow once and record the pushed GHCR image tags.
+4. Complete hosted URL, TLS, and deployment verification evidence.
+5. Re-run Section 3 checklist item by item and update this report with concrete outputs.

@@ -1,0 +1,11 @@
+.git
+.github
+node_modules
+**/node_modules
+.pnpm-store
+apps/web/.next
+apps/worker/.pytest_cache
+apps/worker/.coverage
+apps/worker/coverage.json
+**/__pycache__
+docs/images

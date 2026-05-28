@@ -13,11 +13,13 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN corepack enable && pnpm --filter @dataprofile/web build
 
-FROM node:22-alpine
+FROM node:22-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 ENV PORT=3000
-COPY --from=builder /app/apps/web/.next ./apps/web/.next
+ENV HOSTNAME=0.0.0.0
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
-COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
-COPY --from=builder /app/node_modules ./node_modules
-CMD ["node_modules/.bin/next", "start", "apps/web", "-p", "3000"]
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]
