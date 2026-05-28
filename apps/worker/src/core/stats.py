@@ -209,15 +209,14 @@ def list_sqlite_tables(path: Path) -> list[str]:
 
 def profile_columns(connection, row_count: int, column_prefix: str | None = None) -> list[ColumnProfile]:
     described_columns = connection.execute("DESCRIBE SELECT * FROM active_source").fetchall()
+    sample_rows = fetch_analysis_rows(connection)
+    counts_by_column = collect_column_counts(connection, described_columns)
     profiles: list[ColumnProfile] = []
     for name, duckdb_type, *_ in described_columns:
         quoted = quote_identifier(name)
-        null_count = connection.execute(
-            f"SELECT COUNT(*) FROM active_source WHERE {quoted} IS NULL"
-        ).fetchone()[0]
-        unique_count = connection.execute(
-            f"SELECT COUNT(DISTINCT {quoted}) FROM active_source WHERE {quoted} IS NOT NULL"
-        ).fetchone()[0]
+        summary = counts_by_column[name]
+        null_count = summary["nullCount"]
+        unique_count = summary["uniqueCount"]
         top_rows = connection.execute(
             f"""
             SELECT CAST({quoted} AS VARCHAR) AS value, COUNT(*) AS count
@@ -229,10 +228,9 @@ def profile_columns(connection, row_count: int, column_prefix: str | None = None
             """
         ).fetchall()
         sample_values = [
-            row[0]
-            for row in connection.execute(
-                f"SELECT {quoted} FROM active_source WHERE {quoted} IS NOT NULL LIMIT 200"
-            ).fetchall()
+            row.get(name)
+            for row in sample_rows
+            if row.get(name) is not None
         ]
         inferred_type = detect_column_type(duckdb_type, sample_values)
         column_name = f"{column_prefix or ''}{name}"
@@ -265,6 +263,39 @@ def profile_columns(connection, row_count: int, column_prefix: str | None = None
 
         profiles.append(profile)
     return profiles
+
+
+def fetch_analysis_rows(connection) -> list[dict[str, Any]]:
+    cursor = connection.execute("SELECT * FROM active_source LIMIT 200")
+    columns = [description[0] for description in cursor.description]
+    return [dict(zip(columns, row, strict=False)) for row in cursor.fetchall()]
+
+
+def collect_column_counts(connection, described_columns: list[tuple[Any, ...]]) -> dict[str, dict[str, int]]:
+    if not described_columns:
+        return {}
+    projections: list[str] = []
+    for name, *_ in described_columns:
+        quoted = quote_identifier(name)
+        safe_name = safe_alias(name)
+        projections.append(
+            f'COUNT(*) FILTER (WHERE {quoted} IS NULL) AS "{safe_name}__null_count"'
+        )
+        projections.append(
+            f'COUNT(DISTINCT {quoted}) FILTER (WHERE {quoted} IS NOT NULL) AS "{safe_name}__unique_count"'
+        )
+
+    row = connection.execute(f"SELECT {', '.join(projections)} FROM active_source").fetchone()
+    columns = [description[0] for description in connection.description]
+    values = dict(zip(columns, row, strict=False))
+    counts_by_column: dict[str, dict[str, int]] = {}
+    for name, *_ in described_columns:
+        safe_name = safe_alias(name)
+        counts_by_column[name] = {
+            "nullCount": int(values[f"{safe_name}__null_count"]),
+            "uniqueCount": int(values[f"{safe_name}__unique_count"]),
+        }
+    return counts_by_column
 
 
 def build_numeric_stats(connection, quoted: str) -> NumericStats:
@@ -434,3 +465,7 @@ def quote_identifier(value: str) -> str:
 
 def sql_string(value: Path | str) -> str:
     return "'" + str(value).replace("\\", "/").replace("'", "''") + "'"
+
+
+def safe_alias(value: str) -> str:
+    return value.replace('"', "").replace(".", "_").replace(" ", "_")

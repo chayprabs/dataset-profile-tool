@@ -59,13 +59,29 @@ profile-csv --target-mb 25 --repeats 2
   meanSeconds: 3.7975
   p95Seconds: 4.6517
 
+profile-csv --target-mb 50 --repeats 2
+  meanSeconds: 5.5592
+  p95Seconds: 6.0953
+
+profile-csv --target-mb 100 --repeats 2
+  meanSeconds: 8.2746
+  p95Seconds: 10.0990
+
 profile-parquet --target-mb 5 --repeats 2
   meanSeconds: 1.7821
   p95Seconds: 2.0118
 
+profile-parquet --target-mb 100 --repeats 2
+  meanSeconds: 9.7672
+  p95Seconds: 10.8631
+
 drift-csv --target-mb 5 --repeats 2
   meanSeconds: 3.7346
   p95Seconds: 4.5392
+
+drift-csv --target-mb 100 --repeats 2
+  meanSeconds: 18.2202
+  p95Seconds: 19.3998
 
 memory-soak-csv --target-mb 5 --iterations 3
   rssBeforeMb: 90.41
@@ -73,7 +89,7 @@ memory-soak-csv --target-mb 5 --iterations 3
   rssDeltaMb: 0.50
 ```
 
-This is useful proof that the benchmark and soak harnesses work and that the worker hot path improved substantially after materializing sources into a temp table. It still does **not** satisfy the release targets yet because the checklist requires 100 MB CSV, 1 GB Parquet, and 100 MB drift evidence.
+This is useful proof that the benchmark and soak harnesses work and that the worker hot path improved substantially after materializing sources into a temp table and collapsing repeated per-column scans. It still does **not** satisfy the release targets yet because 100 MB CSV and 100 MB drift remain above the checklist thresholds, and 1 GB Parquet evidence is still missing.
 
 ## Docker verification evidence captured so far
 
