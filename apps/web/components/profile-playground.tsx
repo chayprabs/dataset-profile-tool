@@ -6,18 +6,25 @@ import type { ProfileResult } from "@dataprofile/shared-types";
 import { samples, type SampleDescriptor } from "@dataprofile/shared-worker-runtime";
 import { Panel } from "@dataprofile/shared-ui";
 
+import { buildProfileHtml, buildProfileMarkdown } from "../lib/profile-report";
+
 const tabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies"] as const;
 const sampleModes = ["head", "tail", "random"] as const;
+const sourceModes = ["sample", "file", "url"] as const;
 
 type TabKey = (typeof tabs)[number];
 type SampleMode = (typeof sampleModes)[number];
+type SourceMode = (typeof sourceModes)[number];
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
 
 export function ProfilePlayground() {
   const [activeTab, setActiveTab] = useState<TabKey>("Overview");
+  const [sourceMode, setSourceMode] = useState<SourceMode>("sample");
   const [selectedSample, setSelectedSample] = useState<SampleDescriptor>(samples[0]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [remoteUrl, setRemoteUrl] = useState("");
   const [sampleMode, setSampleMode] = useState<SampleMode>("head");
   const [redactSamples, setRedactSamples] = useState(true);
   const [profile, setProfile] = useState<ProfileResult | null>(null);
@@ -26,7 +33,7 @@ export function ProfilePlayground() {
 
   useEffect(() => {
     if (!profile) {
-      void runProfile(samples[0], "head");
+      void runProfile({ mode: "head", sample: samples[0] });
     }
   }, [profile]);
 
@@ -40,18 +47,40 @@ export function ProfilePlayground() {
     return names;
   }, [profile]);
 
-  async function runProfile(sample: SampleDescriptor, mode: SampleMode) {
+  async function runProfile({
+    file,
+    mode,
+    sample,
+    url
+  }: {
+    file?: File | null;
+    mode: SampleMode;
+    sample?: SampleDescriptor;
+    url?: string;
+  }) {
     setError(null);
     setIsLoading(true);
     try {
-      const response = await fetch(sample.path);
-      if (!response.ok) {
-        throw new Error(`Failed to load ${sample.label}.`);
+      const formData = new FormData();
+      if (file) {
+        formData.append("file", file, file.name);
+      } else if (url) {
+        formData.append("url", url);
+        const inferredFormat = inferFormatFromName(url);
+        if (inferredFormat) {
+          formData.append("format", inferredFormat);
+        }
+      } else if (sample) {
+        const response = await fetch(sample.path);
+        if (!response.ok) {
+          throw new Error(`Failed to load ${sample.label}.`);
+        }
+        const blob = await response.blob();
+        formData.append("file", blob, sample.path.split("/").pop() ?? `${sample.slug}.${sample.format}`);
+      } else {
+        throw new Error("Choose a sample, file, or URL first.");
       }
 
-      const blob = await response.blob();
-      const formData = new FormData();
-      formData.append("file", blob, sample.path.split("/").pop() ?? `${sample.slug}.${sample.format}`);
       formData.append("sampleMode", mode);
       formData.append("sampleSize", "20");
 
@@ -66,7 +95,9 @@ export function ProfilePlayground() {
 
       const payload = (await profileResponse.json()) as ProfileResult;
       setProfile(payload);
-      setSelectedSample(sample);
+      if (sample) {
+        setSelectedSample(sample);
+      }
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Profile request failed.");
     } finally {
@@ -85,21 +116,48 @@ export function ProfilePlayground() {
                   Signature Move
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold">
-                  Profile a real fixture and inspect the contract immediately.
+                  Profile a dataset from sample, upload, or URL and export the result immediately.
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-black/65">
-                  This first interactive pass focuses on sample-driven profiling,
-                  schema review, anomaly inspection, and PII-safe sample previews.
+                  This pass opens up real source modes and the first export path,
+                  while keeping schema, anomaly, and PII-safe sample review in one place.
                 </p>
               </div>
               <button
                 className="rounded-full border border-[var(--accent)] bg-[var(--accent)] px-4 py-2 text-sm text-white transition hover:opacity-90 disabled:opacity-50"
                 disabled={isLoading}
-                onClick={() => void runProfile(selectedSample, sampleMode)}
+                onClick={() => {
+                  if (sourceMode === "file") {
+                    void runProfile({ file: selectedFile, mode: sampleMode });
+                    return;
+                  }
+                  if (sourceMode === "url") {
+                    void runProfile({ mode: sampleMode, url: remoteUrl.trim() });
+                    return;
+                  }
+                  void runProfile({ mode: sampleMode, sample: selectedSample });
+                }}
                 type="button"
               >
-                {isLoading ? "Profiling..." : "Profile Sample"}
+                {isLoading ? "Profiling..." : "Run Profile"}
               </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              {sourceModes.map((mode) => (
+                <button
+                  key={mode}
+                  className={`rounded-full px-4 py-2 text-sm transition ${
+                    sourceMode === mode
+                      ? "bg-[#1a4037] text-white"
+                      : "border border-[var(--border)] bg-white text-black/75"
+                  }`}
+                  onClick={() => setSourceMode(mode)}
+                  type="button"
+                >
+                  {mode}
+                </button>
+              ))}
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -113,7 +171,9 @@ export function ProfilePlayground() {
                   }`}
                   onClick={() => {
                     setSampleMode(mode);
-                    void runProfile(selectedSample, mode);
+                    if (sourceMode === "sample") {
+                      void runProfile({ mode, sample: selectedSample });
+                    }
                   }}
                   type="button"
                 >
@@ -121,6 +181,43 @@ export function ProfilePlayground() {
                 </button>
               ))}
             </div>
+
+            {sourceMode === "sample" ? (
+              <p className="mt-4 text-sm text-black/60">
+                Using curated fixtures for fast iteration and stable regression checks.
+              </p>
+            ) : null}
+
+            {sourceMode === "file" ? (
+              <div className="mt-4 rounded-[1.25rem] border border-[var(--border)] bg-white/80 p-4">
+                <label className="block text-sm font-medium">Upload dataset</label>
+                <input
+                  accept=".csv,.tsv,.json,.jsonl,.parquet,.arrow,.ipc,.avro,.sqlite,.db"
+                  className="mt-3 block w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                  type="file"
+                />
+                <p className="mt-2 text-xs text-black/55">
+                  Supports CSV, TSV, JSON, JSONL, Parquet, Arrow IPC, Avro, and SQLite.
+                </p>
+              </div>
+            ) : null}
+
+            {sourceMode === "url" ? (
+              <div className="mt-4 rounded-[1.25rem] border border-[var(--border)] bg-white/80 p-4">
+                <label className="block text-sm font-medium">Remote dataset URL</label>
+                <input
+                  className="mt-3 block w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
+                  onChange={(event) => setRemoteUrl(event.target.value)}
+                  placeholder="https://example.com/data.parquet"
+                  type="url"
+                  value={remoteUrl}
+                />
+                <p className="mt-2 text-xs text-black/55">
+                  Best with direct HTTPS or presigned object-storage URLs.
+                </p>
+              </div>
+            ) : null}
           </div>
 
           {error ? (
@@ -149,13 +246,41 @@ export function ProfilePlayground() {
               </div>
 
               {activeTab === "Overview" ? (
-                <div className="grid gap-4 md:grid-cols-3">
-                  <MetricCard label="Rows" value={profile.source.rowCount.toLocaleString()} />
-                  <MetricCard label="Columns" value={profile.columns.length.toString()} />
-                  <MetricCard
-                    label="Warnings"
-                    value={profile.warnings.length ? profile.warnings.length.toString() : "0"}
-                  />
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    <ExportButton
+                      content={JSON.stringify(profile, null, 2)}
+                      fileName="dataprofile-report.json"
+                      label="Export JSON"
+                      mimeType="application/json"
+                    />
+                    <ExportButton
+                      content={buildProfileMarkdown(profile)}
+                      fileName="dataprofile-report.md"
+                      label="Export Markdown"
+                      mimeType="text/markdown"
+                    />
+                    <ExportButton
+                      content={buildProfileHtml(profile)}
+                      fileName="dataprofile-report.html"
+                      label="Export HTML"
+                      mimeType="text/html"
+                    />
+                    <ExportButton
+                      content={JSON.stringify(profile.schema, null, 2)}
+                      fileName="dataprofile.schema.json"
+                      label="Export Schema"
+                      mimeType="application/schema+json"
+                    />
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <MetricCard label="Rows" value={profile.source.rowCount.toLocaleString()} />
+                    <MetricCard label="Columns" value={profile.columns.length.toString()} />
+                    <MetricCard
+                      label="Warnings"
+                      value={profile.warnings.length ? profile.warnings.length.toString() : "0"}
+                    />
+                  </div>
                 </div>
               ) : null}
 
@@ -300,7 +425,8 @@ export function ProfilePlayground() {
                   }`}
                   onClick={() => {
                     setSelectedSample(sample);
-                    void runProfile(sample, sampleMode);
+                    setSourceMode("sample");
+                    void runProfile({ mode: sampleMode, sample });
                   }}
                   type="button"
                 >
@@ -357,7 +483,57 @@ function renderSampleValue(value: unknown, shouldRedact: boolean) {
   }
   const text = String(value);
   if (text.length <= 4) {
-    return "••••";
+    return "[redacted]";
   }
-  return `${text.slice(0, 2)}••••${text.slice(-2)}`;
+  return `${text.slice(0, 2)}[redacted]${text.slice(-2)}`;
+}
+
+function ExportButton({
+  content,
+  fileName,
+  label,
+  mimeType
+}: {
+  content: string;
+  fileName: string;
+  label: string;
+  mimeType: string;
+}) {
+  return (
+    <button
+      className="rounded-full border border-[var(--border)] bg-white/80 px-4 py-2 text-sm text-black/70 transition hover:bg-white"
+      onClick={() => downloadTextFile(content, fileName, mimeType)}
+      type="button"
+    >
+      {label}
+    </button>
+  );
+}
+
+function downloadTextFile(content: string, fileName: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
+function inferFormatFromName(value: string): string | null {
+  const lower = value.toLowerCase();
+  const suffixes = [
+    ".csv",
+    ".tsv",
+    ".json",
+    ".jsonl",
+    ".parquet",
+    ".arrow",
+    ".ipc",
+    ".avro",
+    ".sqlite",
+    ".db"
+  ] as const;
+  const matched = suffixes.find((suffix) => lower.endsWith(suffix));
+  return matched ? matched.slice(1).replace("db", "sqlite").replace("ipc", "arrow") : null;
 }

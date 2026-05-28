@@ -28,7 +28,9 @@ print(profile.model_dump_json(by_alias=True))
     cwd: appRoot,
     encoding: "utf-8"
   });
-  return JSON.parse(output) as {
+  const jsonStart = output.indexOf("{");
+  const jsonPayload = jsonStart >= 0 ? output.slice(jsonStart) : output;
+  return JSON.parse(jsonPayload) as {
     schema: Record<string, unknown>;
     sampleRows: Array<Record<string, unknown>>;
   };
