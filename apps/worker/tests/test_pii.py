@@ -1,4 +1,4 @@
-from core.pii import detect_pii_flags, passes_luhn
+from core.pii import detect_pii_flags, looks_like_phone, passes_luhn
 
 
 def test_detect_pii_flags_finds_expected_patterns():
@@ -18,3 +18,8 @@ def test_detect_pii_flags_finds_expected_patterns():
 def test_luhn_rejects_invalid_card():
     assert passes_luhn("4111111111111111")
     assert not passes_luhn("4111111111111112")
+
+
+def test_phone_detector_rejects_credit_card_length_values():
+    assert looks_like_phone("+1 (555) 123-4567")
+    assert not looks_like_phone("4111111111111111")

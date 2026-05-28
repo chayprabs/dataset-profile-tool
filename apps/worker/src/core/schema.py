@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from models import ColumnProfile
 
+STANDARD_FORMATS = {"email", "uri", "uuid", "date-time", "date"}
 
 TYPE_MAP = {
     "int": "integer",
@@ -28,10 +29,23 @@ def infer_json_schema(columns: list[ColumnProfile]) -> dict:
             "examples": [value.value for value in column.topValues[:3]],
             "x-confidence": round(column.confidence, 4),
         }
+        if column.numeric:
+            if column.numeric.min is not None:
+                property_schema["minimum"] = column.numeric.min
+            if column.numeric.max is not None:
+                property_schema["maximum"] = column.numeric.max
+        if column.string:
+            property_schema["minLength"] = column.string.minLen
+            property_schema["maxLength"] = column.string.maxLen
         if column.inferredType in {"date", "datetime", "timestamp"}:
             property_schema["format"] = "date-time" if column.inferredType != "date" else "date"
         if column.format:
-            property_schema["format"] = column.format
+            if column.format in STANDARD_FORMATS:
+                property_schema["format"] = column.format
+            else:
+                property_schema["x-dataprofile-formatHint"] = column.format
+        if column.piiFlags:
+            property_schema["x-dataprofile-piiFlags"] = column.piiFlags
         if column.uniqueCount and column.uniqueCount <= 10 and len(column.topValues) == column.uniqueCount:
             property_schema["enum"] = [value.value for value in column.topValues]
         if column.nullable:

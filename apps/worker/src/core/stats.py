@@ -395,7 +395,7 @@ def classify_value(value: Any) -> str:
 
 
 def pick_format(flags: list[str]) -> str | None:
-    for candidate in ("email", "phone", "iban", "credit_card", "uuid", "uri", "date-time"):
+    for candidate in ("email", "credit_card", "iban", "phone", "uuid", "uri", "date-time"):
         if candidate in flags:
             return candidate
     return None

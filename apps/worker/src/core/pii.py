@@ -40,6 +40,13 @@ def passes_luhn(value: str) -> bool:
     return checksum % 10 == 0
 
 
+def looks_like_phone(value: str) -> bool:
+    if not PHONE_RE.match(value):
+        return False
+    digits = "".join(char for char in value if char.isdigit())
+    return 7 <= len(digits) <= 15
+
+
 def detect_pii_flags(column_name: str, values: Iterable[object]) -> list[str]:
     flags: set[str] = set()
     normalized_name = column_name.lower()
@@ -55,7 +62,7 @@ def detect_pii_flags(column_name: str, values: Iterable[object]) -> list[str]:
             continue
         if EMAIL_RE.match(text):
             flags.add("email")
-        if PHONE_RE.match(text):
+        if looks_like_phone(text):
             flags.add("phone")
         if SSN_RE.match(text):
             flags.add("ssn")
