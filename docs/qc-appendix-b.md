@@ -47,6 +47,7 @@ Coverage gate policy is enforced by:
 - AJV round-trip schema tests for sample fixtures.
 - Drift golden tests for `drift-week-1.csv` vs `drift-week-2.csv`.
 - Share-link flow for profile and drift snapshots.
+- Share-link expiry is covered at both store and endpoint level in `apps/worker/tests/test_share.py`.
 - Web smoke verification of `/drift` plus generated `/s/[token]` read-only links.
 - Worker health route now reports configured runtime limits and startup-applied OS process limits.
 
@@ -144,13 +145,26 @@ seo: 100
 
 Report artifacts were generated successfully, and the current local audit satisfies the Section 3.12 Lighthouse threshold. The only remaining noise on this machine is a Windows Chrome temp-directory cleanup `EPERM` after the report is written.
 
+## Security and repo metadata evidence
+
+- GitHub repository topics now include: `data-profiling`, `csv`, `parquet`, `jsonl`, `avro`, `sqlite`, `json-schema`, `schema-inference`, `data-quality`, `eda`, `schema-drift`, `duckdb`, `dataset-profiler`, `online-tool`.
+- README now includes the required first-100-word terms, a hosted URL reference, a real product screenshot, and self-host instructions.
+- Local production headers from `next start` include:
+
+```text
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http://localhost:8080 http://127.0.0.1:8080 https:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+```
+
 ## Remaining qualification gaps
 
 - `100 MB CSV`, `100 MB drift`, and `1 GB Parquet` now have passing local evidence.
 - Worker memory-cap configuration is now surfaced by `/v1/health`, and sampled worker-process RSS stayed well below `4096 MB` for `100 MB CSV`, `100 MB drift`, and `1 GB Parquet`. The remaining gap is methodological hardening: we should decide whether the external RSS probe should replace the older in-process soak in the formal checklist runbook.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and release-artifact checks are still pending.
-- Monaco is now in place, but the Columns table still needs stronger evidence for full checklist-grade virtualization behavior under larger datasets.
+- Monaco is now in place with copy/download controls, and the sample grid is virtualized. The remaining UI gap is stronger evidence for columns-table behavior under larger datasets.
 - Release-size benchmark evidence now exists for the main worker paths, and the core latency gates are currently green locally.
 - Final Appendix B verdict remains open until every Section 3 checkbox has hard evidence.
 
