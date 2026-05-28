@@ -2,20 +2,114 @@
 
 :root {
   color-scheme: light;
-  --background: #f7f3eb;
-  --foreground: #171717;
-  --panel: rgba(255, 255, 255, 0.82);
-  --border: rgba(23, 23, 23, 0.12);
-  --accent: #0e5f4f;
-  --accent-soft: rgba(14, 95, 79, 0.12);
+  --background: #f5f0e6;
+  --foreground: #1c201d;
+  --panel: rgba(255, 251, 246, 0.8);
+  --panel-strong: rgba(255, 255, 255, 0.92);
+  --border: rgba(28, 32, 29, 0.12);
+  --border-strong: rgba(28, 32, 29, 0.22);
+  --accent: #184f43;
+  --accent-strong: #10372f;
+  --accent-soft: rgba(24, 79, 67, 0.12);
+  --accent-warm: #b66b33;
+  --muted: rgba(28, 32, 29, 0.6);
+  --shadow: 0 20px 60px rgba(43, 34, 20, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(232, 195, 120, 0.45), transparent 30%),
-    radial-gradient(circle at top right, rgba(14, 95, 79, 0.25), transparent 35%),
-    linear-gradient(180deg, #f7f3eb 0%, #efe8dd 100%);
+    radial-gradient(circle at top left, rgba(233, 188, 120, 0.34), transparent 26%),
+    radial-gradient(circle at top right, rgba(24, 79, 67, 0.18), transparent 32%),
+    linear-gradient(180deg, #f5f0e6 0%, #ece4d6 54%, #e9e0d2 100%);
   color: var(--foreground);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", ui-serif, serif;
   min-height: 100vh;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  background-image:
+    linear-gradient(to right, rgba(28, 32, 29, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 32, 29, 0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+  content: "";
+  inset: 0;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 78%);
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+a,
+button,
+input,
+select {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(24, 79, 67, 0.28);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(24, 79, 67, 0.18);
+}
+
+.ui-kicker {
+  color: var(--accent);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.ui-shell {
+  margin-inline: auto;
+  max-width: 78rem;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.ui-hero {
+  background:
+    linear-gradient(135deg, rgba(255, 251, 246, 0.95), rgba(249, 242, 232, 0.86)),
+    radial-gradient(circle at top right, rgba(24, 79, 67, 0.12), transparent 32%);
+  border: 1px solid rgba(28, 32, 29, 0.1);
+  border-radius: 2.25rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: relative;
+}
+
+.ui-hero::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  content: "";
+  height: 1px;
+  left: 2rem;
+  position: absolute;
+  right: 2rem;
+  top: 0;
+}
+
+.ui-soft-card {
+  background: var(--panel-strong);
+  border: 1px solid rgba(28, 32, 29, 0.1);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px rgba(43, 34, 20, 0.05);
 }

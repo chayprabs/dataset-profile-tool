@@ -38,45 +38,73 @@ const faqSchema = {
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-8">
+    <main className="ui-shell flex min-h-screen flex-col gap-8">
       <script
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         type="application/ld+json"
       />
-      <header className="flex flex-col gap-4 rounded-[2rem] border border-[var(--border)] bg-[var(--panel)] p-8 shadow-lg shadow-black/5 backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <header className="ui-hero grid gap-8 p-8 lg:grid-cols-[1.2fr_0.8fr] lg:p-10">
+        <div className="space-y-6">
           <div>
-            <p className="text-sm uppercase tracking-[0.35em] text-[var(--accent)]">
-              DataProfile
-            </p>
-            <h1 className="mt-2 text-4xl font-semibold">
-              Stream dataset profiling through DuckDB.
+            <p className="ui-kicker">DataProfile</p>
+            <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.035em] lg:text-6xl">
+              Fast, server-side dataset profiling with a quieter interface.
             </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-black/68 lg:text-lg">
+              Profile CSV, TSV, JSON, JSONL, Parquet, Arrow, Avro, and SQLite files
+              through DuckDB, inspect drift and anomaly hints, and export shareable
+              reports without hauling the full dataset into the browser.
+            </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm"
+              className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-white shadow-sm shadow-[var(--accent)]/20"
               href="/drift"
             >
-              Drift Mode
+              Open Drift Mode
             </Link>
             <a
-              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm"
+              className="rounded-full border border-[var(--border-strong)] bg-white/78 px-5 py-2.5 text-sm text-black/78"
               href="https://github.com/chayprabs/dataset-profile-tool"
             >
-              GitHub
+              View Source
             </a>
           </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatPill label="Formats" value="8" />
+            <StatPill label="Worker" value="DuckDB + FastAPI" />
+            <StatPill label="Outputs" value="Profile / Schema / Drift" />
+          </div>
         </div>
-        <p className="max-w-3xl text-base leading-7 text-black/70">
-          Drop a file, paste a presigned URL, or open a sample to inspect
-          schema, per-column stats, drift, anomaly hints, and PII-safe
-          samples without dragging the full dataset into memory.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <StatPill label="Formats" value="8" />
-          <StatPill label="Worker" value="FastAPI + DuckDB" />
-          <StatPill label="Outputs" value="Profile, Schema, Drift" />
+        <div className="ui-soft-card grid gap-5 p-6 lg:p-7">
+          <div className="flex items-center justify-between">
+            <p className="ui-kicker">What You Get</p>
+            <span className="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1 text-xs uppercase tracking-[0.2em] text-black/55">
+              Minimal by default
+            </span>
+          </div>
+          <div className="space-y-4 text-sm leading-6 text-black/68">
+            <p>
+              The profile surface is built for quick first-pass diagnosis: clean metrics,
+              expandable column detail, a schema view you can copy directly, and a sample
+              grid that redacts flagged PII by default.
+            </p>
+            <p>
+              When drift matters, the compare flow groups changes into additive,
+              compatible, and breaking categories and keeps export/share actions close
+              to the result instead of hiding them behind secondary menus.
+            </p>
+          </div>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[1.35rem] border border-[var(--border)] bg-white/75 p-4">
+              <dt className="text-xs uppercase tracking-[0.2em] text-black/45">Profiling</dt>
+              <dd className="mt-2 text-lg font-semibold">Column stats, schema, anomalies, PII</dd>
+            </div>
+            <div className="rounded-[1.35rem] border border-[var(--border)] bg-white/75 p-4">
+              <dt className="text-xs uppercase tracking-[0.2em] text-black/45">Review</dt>
+              <dd className="mt-2 text-lg font-semibold">Exports, share links, drift snapshots</dd>
+            </div>
+          </dl>
         </div>
       </header>
 

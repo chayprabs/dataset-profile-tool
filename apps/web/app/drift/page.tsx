@@ -4,24 +4,36 @@ import { DriftPlayground } from "../../components/drift-playground";
 
 export default function DriftPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-8">
-      <header className="flex flex-col gap-4 rounded-[2rem] border border-[var(--border)] bg-[var(--panel)] p-8 shadow-lg shadow-black/5 backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <main className="ui-shell flex min-h-screen flex-col gap-8">
+      <header className="ui-hero grid gap-8 p-8 lg:grid-cols-[1.15fr_0.85fr] lg:p-10">
+        <div className="space-y-5">
           <div>
-            <p className="text-sm uppercase tracking-[0.35em] text-[var(--accent)]">DataProfile</p>
-            <h1 className="mt-2 text-4xl font-semibold">Drift reports for week-over-week datasets.</h1>
+            <p className="ui-kicker">DataProfile / Drift</p>
+            <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.035em] lg:text-6xl">
+              Week-over-week change review without spreadsheet gymnastics.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-black/68 lg:text-lg">
+              Compare two snapshots, classify additive and breaking changes, and hand
+              off a read-only report link instead of a loose diff screenshot.
+            </p>
           </div>
-          <Link
-            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm"
-            href="/"
-          >
-            Back to Profile
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-white shadow-sm shadow-[var(--accent)]/20"
+              href="/"
+            >
+              Back to Profile
+            </Link>
+          </div>
         </div>
-        <p className="max-w-3xl text-base leading-7 text-black/70">
-          Compare two snapshots, classify additive, compatible, and breaking changes, then export
-          a report or create a read-only share link for async review.
-        </p>
+        <div className="ui-soft-card space-y-4 p-6 lg:p-7">
+          <p className="ui-kicker">Golden Path</p>
+          <div className="space-y-3 text-sm leading-6 text-black/68">
+            <p>Start with the bundled week-one and week-two fixtures to verify the expected change set.</p>
+            <p>Then switch to file or URL mode for live extracts once the structure looks stable.</p>
+            <p>Exports and share links live alongside the result so review stays fast and asynchronous.</p>
+          </div>
+        </div>
       </header>
 
       <DriftPlayground />
