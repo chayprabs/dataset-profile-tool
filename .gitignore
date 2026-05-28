@@ -15,7 +15,11 @@ QUALIFYING_CRITERIA.md
 node_modules/
 .pnpm-store/
 apps/web/.next/
+apps/web/tsconfig.tsbuildinfo
 packages/*/dist/
 apps/worker/.pytest_cache/
 apps/worker/.coverage
+apps/worker/src/**/*.egg-info/
+**/__pycache__/
+*.pyc
 coverage/
