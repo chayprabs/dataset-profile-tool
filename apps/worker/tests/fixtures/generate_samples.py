@@ -5,6 +5,8 @@ import sqlite3
 from pathlib import Path
 
 import duckdb
+import pyarrow as pa
+import pyarrow.ipc as pa_ipc
 from fastavro import parse_schema, writer
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -37,6 +39,7 @@ def main() -> None:
     SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     source_csv = SAMPLES_DIR / "ecommerce-events.csv"
     write_parquet(source_csv)
+    write_arrow()
     write_sqlite()
     write_avro()
 
@@ -47,6 +50,21 @@ def write_parquet(source_csv: Path) -> None:
         connection.execute(
             f"COPY (SELECT * FROM read_csv_auto('{source_csv.as_posix()}', header=true)) TO '{destination.as_posix()}' (FORMAT PARQUET)"
         )
+
+
+def write_arrow() -> None:
+    destination = SAMPLES_DIR / "sample.arrow"
+    table = pa.table(
+        {
+            "customer_id": [row["customer_id"] for row in BASE_ROWS],
+            "customer_email": [row["customer_email"] for row in BASE_ROWS],
+            "tier": [row["tier"] for row in BASE_ROWS],
+            "spend": [row["spend"] for row in BASE_ROWS],
+        }
+    )
+    with destination.open("wb") as handle:
+        with pa_ipc.new_file(handle, table.schema) as writer_handle:
+            writer_handle.write_table(table)
 
 
 def write_sqlite() -> None:

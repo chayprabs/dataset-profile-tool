@@ -12,6 +12,7 @@ dependencies = [
   "fastapi>=0.115",
   "fastavro>=1.10",
   "pydantic>=2.8",
+  "pyarrow>=18.0",
   "pytz>=2024.1",
   "python-multipart>=0.0.9",
   "uvicorn[standard]>=0.30"

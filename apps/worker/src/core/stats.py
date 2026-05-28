@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
+import pyarrow.ipc as pa_ipc
 from fastavro import reader as avro_reader
 
 from core.anomalies import detect_anomalies
@@ -40,6 +41,8 @@ FORMAT_ALIASES = {
     ".sqlite": "sqlite",
     ".db": "sqlite",
 }
+
+HISTOGRAM_BUCKETS = 8
 
 DUCKDB_TYPE_MAP = {
     "BIGINT": "int",
@@ -78,13 +81,20 @@ def profile_dataset(path: Path, format_hint: str | None = None, sample_size: int
         row_count = 0
         warnings = list(prepared.warnings)
         for source in sources:
-            connection.execute(f"CREATE OR REPLACE TEMP VIEW active_source AS {source.query}")
+            if source.arrow_table is not None:
+                connection.register("dataprofile_arrow_source", source.arrow_table)
+                source_query = "SELECT * FROM dataprofile_arrow_source"
+            else:
+                source_query = source.query
+            connection.execute(f"CREATE OR REPLACE TEMP VIEW active_source AS {source_query}")
             row_count += connection.execute("SELECT COUNT(*) FROM active_source").fetchone()[0]
             if not sample_rows:
                 sample_rows = fetch_sample_rows(connection, sample_size)
             all_columns.extend(profile_columns(connection, source.column_prefix))
             if source.warning:
                 warnings.append(source.warning)
+            if source.arrow_table is not None:
+                connection.unregister("dataprofile_arrow_source")
 
     schema = infer_json_schema(all_columns)
     return ProfileResponse(
@@ -107,6 +117,7 @@ class MaterializedSource:
     query: str
     column_prefix: str | None = None
     warning: str | None = None
+    arrow_table: Any | None = None
 
 
 def prepare_source(path: Path, format_hint: str | None = None) -> PreparedSource:
@@ -163,7 +174,8 @@ def materialize_sources(connection, prepared: PreparedSource, temp_root: Path) -
     if prepared.format == "parquet":
         return [MaterializedSource(query=f"SELECT * FROM read_parquet({path_sql})")]
     if prepared.format == "arrow":
-        return [MaterializedSource(query=f"SELECT * FROM read_ipc({path_sql})")]
+        with pa_ipc.open_file(prepared.path) as arrow_file:
+            return [MaterializedSource(query="SELECT 1", arrow_table=arrow_file.read_all())]
     if prepared.format == "sqlite":
         tables = list_sqlite_tables(prepared.path)
         sources: list[MaterializedSource] = []
@@ -272,27 +284,31 @@ def build_numeric_stats(connection, quoted: str) -> NumericStats:
 
 def build_histogram(connection, quoted: str, min_value: float | None, max_value: float | None) -> list[int]:
     if min_value is None or max_value is None:
-        return []
+        return [0] * HISTOGRAM_BUCKETS
     if min_value == max_value:
-        return [connection.execute(f"SELECT COUNT(*) FROM active_source WHERE {quoted} IS NOT NULL").fetchone()[0]]
+        count = connection.execute(
+            f"SELECT COUNT(*) FROM active_source WHERE {quoted} IS NOT NULL"
+        ).fetchone()[0]
+        return [int(count)] + ([0] * (HISTOGRAM_BUCKETS - 1))
     span = float(max_value) - float(min_value)
     bins = connection.execute(
         f"""
         WITH bucketed AS (
           SELECT LEAST(
-            7,
-            CAST(FLOOR(((CAST({quoted} AS DOUBLE) - {float(min_value)}) / {span}) * 8) AS BIGINT)
+            {HISTOGRAM_BUCKETS - 1},
+            CAST(FLOOR(((CAST({quoted} AS DOUBLE) - {float(min_value)}) / {span}) * {HISTOGRAM_BUCKETS}) AS BIGINT)
           ) AS bucket
           FROM active_source
           WHERE {quoted} IS NOT NULL
         )
-        SELECT COUNT(*) AS count
+        SELECT bucket, COUNT(*) AS count
         FROM bucketed
         GROUP BY bucket
         ORDER BY bucket
         """
     ).fetchall()
-    return [int(row[0]) for row in bins]
+    counts_by_bucket = {int(bucket): int(count) for bucket, count in bins}
+    return [counts_by_bucket.get(bucket_index, 0) for bucket_index in range(HISTOGRAM_BUCKETS)]
 
 
 def build_string_stats(sample_values: list[Any]) -> StringStats:
@@ -300,10 +316,10 @@ def build_string_stats(sample_values: list[Any]) -> StringStats:
     if not values:
         return StringStats()
     char_classes = {
-        "lower": sum(any(char.islower() for char in value) for value in values),
-        "upper": sum(any(char.isupper() for char in value) for value in values),
-        "digit": sum(any(char.isdigit() for char in value) for value in values),
-        "punct": sum(any(not char.isalnum() and not char.isspace() for char in value) for value in values),
+        "lower": sum(char.islower() for value in values for char in value),
+        "upper": sum(char.isupper() for value in values for char in value),
+        "digit": sum(char.isdigit() for value in values for char in value),
+        "punct": sum((not char.isalnum() and not char.isspace()) for value in values for char in value),
     }
     lengths = [len(value) for value in values]
     return StringStats(minLen=min(lengths), maxLen=max(lengths), charClasses=char_classes)

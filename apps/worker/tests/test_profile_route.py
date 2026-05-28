@@ -15,6 +15,7 @@ def test_profile_endpoint_supports_text_and_binary_formats():
         "users.json",
         "weather.jsonl",
         "nyc-taxi-sample.parquet",
+        "sample.arrow",
         "users.avro",
         "chinook.sqlite",
     ]
