@@ -5,10 +5,44 @@ import { Panel, StatPill } from "@dataprofile/shared-ui";
 import { ProfilePlayground } from "../components/profile-playground";
 
 const tabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies", "Drift"];
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Which dataset formats can DataProfile inspect?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "DataProfile supports CSV, TSV, JSON, JSONL, Parquet, Arrow IPC, Avro, and SQLite sources."
+      }
+    },
+    {
+      "@type": "Question",
+      name: "Can DataProfile infer JSON Schema from real data?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. The worker generates Draft 2020-12 JSON Schema with confidence scores, examples, and format hints based on observed values."
+      }
+    },
+    {
+      "@type": "Question",
+      name: "Does DataProfile support week-over-week drift analysis?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. The drift mode compares two snapshots and groups changes into additive, compatible, and breaking classifications with report exports and share links."
+      }
+    }
+  ]
+};
 
 export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-8">
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        type="application/ld+json"
+      />
       <header className="flex flex-col gap-4 rounded-[2rem] border border-[var(--border)] bg-[var(--panel)] p-8 shadow-lg shadow-black/5 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
