@@ -64,12 +64,24 @@ Published tags push:
 
 Manual `workflow_dispatch` runs can build-only for smoke verification or push with a custom tag.
 
+## Deployment scaffolding
+
+Checked-in deployment artifacts now exist for the planned production split:
+
+- Cloudflare Workers: `apps/web/wrangler.jsonc` and `apps/web/open-next.config.ts`
+- Fly.io worker: `fly.toml`
+- R2 lifecycle example: `deploy/r2-lifecycle-rules.example.json`
+- Deployment runbook: `deploy/README.md`
+
+These configs are intended to make the final hosted rollout reproducible. They do not replace the still-missing hosted URL, TLS proof, or successful live release evidence.
+
 ## Verification helpers
 
 Repeatable qualification-oriented commands:
 
 ```bash
 pnpm test:worker-coverage
+pnpm verify:deployment-artifacts
 pnpm verify:local-stack
 pnpm lighthouse
 python scripts/benchmark_worker.py profile-csv --target-mb 25 --repeats 3

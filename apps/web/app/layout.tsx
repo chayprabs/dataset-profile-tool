@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
+import { siteUrl } from "../lib/site-url";
 import "./globals.css";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://data-profile.standalone-tool-portfolio.local";
 
 export const metadata: Metadata = {
   title: "DataProfile",

@@ -15,6 +15,9 @@ QUALIFYING_CRITERIA.md
 node_modules/
 .pnpm-store/
 apps/web/.next/
+apps/web/.open-next/
+apps/web/.dev.vars
+apps/web/cloudflare-env.d.ts
 apps/web/tsconfig.tsbuildinfo
 packages/*/dist/
 apps/worker/.pytest_cache/

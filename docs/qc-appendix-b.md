@@ -16,6 +16,7 @@ This report tracks release-gate evidence for `dataset-profile-tool` against
 - `pnpm test`
 - `pnpm build`
 - `pnpm test:worker-coverage`
+- `pnpm verify:deployment-artifacts` support added
 - `pnpm verify:local-stack` support added
 - `pnpm lighthouse` support added
 - `pnpm measure:worker-rss -- <scenario> --target-mb <N>` support added
@@ -203,12 +204,22 @@ X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 ```
 
+## Deployment artifact evidence
+
+- `apps/web/wrangler.jsonc` now provides a checked-in OpenNext Cloudflare worker shape with `.open-next/worker.js`, explicit compatibility flags, asset binding, and worker self-reference binding.
+- `apps/web/public/_headers` now sets immutable caching for `/_next/static/*`.
+- `fly.toml` remains the checked-in worker deployment baseline with Dockerfile build wiring, `/v1/health` checks, and a `4gb` performance preset VM.
+- `deploy/r2-lifecycle-rules.example.json` documents the intended one-day retention policy for ephemeral share and upload prefixes.
+- `deploy/README.md` now gives a concrete runbook for Cloudflare Workers, Fly.io, R2, and the final hosted verification sweep.
+- `python scripts/verify_deployment_artifacts.py` verifies the presence and shape of those deployment artifacts through `pnpm verify:deployment-artifacts`.
+
 ## Remaining qualification gaps
 
 - `100 MB CSV`, `100 MB drift`, and `1 GB Parquet` now have passing local evidence.
 - Worker memory-cap configuration is now surfaced by `/v1/health`, and sampled worker-process RSS stayed well below `4096 MB` for `100 MB CSV`, `100 MB drift`, and `1 GB Parquet`. The remaining gap is methodological hardening: we should decide whether the external RSS probe should replace the older in-process soak in the formal checklist runbook.
 - Docker/local-run evidence for Section 3.3 now has a scripted path, but the daemon on this machine is unavailable, so stack boot remains `VERIFY-DEFERRED`.
 - Hosted URL, TLS, deployment, and first successful release-image publish are still pending.
+- Deployment artifacts are now present and documented, but live provider evidence is still missing: no hosted Cloudflare URL has been verified, no Fly deployment has been observed healthy in two regions yet, and no R2 lifecycle has been confirmed from a real bucket.
 - Privacy evidence is stronger now: remote URL handling no longer downloads local copies before profiling, and the live worker log check did not leak any raw values from `pii-laden.csv`.
 - Acceptance fixture evidence is now explicit through `pnpm verify:acceptance`, and the current run is green for A1, A2, and A3.
 - Monaco is now in place with copy/download controls, and both the sample grid and columns table are virtualized. The remaining UI gap is stronger runtime evidence for those surfaces under larger datasets.

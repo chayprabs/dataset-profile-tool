@@ -4,8 +4,11 @@
   "version": "0.1.0",
   "scripts": {
     "build": "next build",
+    "cf-typegen": "pnpm dlx wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "dev": "next dev",
+    "deploy": "pnpm dlx @opennextjs/cloudflare build && pnpm dlx @opennextjs/cloudflare deploy",
     "lint": "eslint .",
+    "preview": "pnpm dlx @opennextjs/cloudflare build && pnpm dlx @opennextjs/cloudflare preview",
     "start": "next start",
     "test": "vitest run",
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit"
@@ -24,6 +27,7 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.8.5",
     "@eslint/js": "^9.28.0",
     "@tailwindcss/postcss": "^4.1.8",
     "@testing-library/jest-dom": "^6.6.3",

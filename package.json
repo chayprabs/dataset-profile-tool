@@ -17,6 +17,7 @@
     "test:worker-coverage": "cd apps/worker && python -m pytest --cov=src --cov-report=json:coverage.json --cov-report=term-missing tests && python ../../scripts/validate_worker_coverage.py coverage.json",
     "typecheck": "pnpm --filter @dataprofile/web typecheck && pnpm --filter @dataprofile/shared-types typecheck && pnpm --filter @dataprofile/shared-ui typecheck && pnpm --filter @dataprofile/shared-worker-runtime typecheck",
     "verify:acceptance": "python scripts/verify_acceptance.py",
+    "verify:deployment-artifacts": "python scripts/verify_deployment_artifacts.py",
     "verify:privacy-security": "python scripts/verify_privacy_security.py",
     "verify:local-stack": "python scripts/verify_local_stack.py"
   },

@@ -1,0 +1,40 @@
+app = "dataprofile-worker"
+primary_region = "iad"
+
+[build]
+  dockerfile = "apps/worker/Dockerfile"
+
+[env]
+  DATAPROFILE_MAX_UPLOAD_MB = "50"
+  DATAPROFILE_JOB_TTL_SECONDS = "900"
+  DATAPROFILE_JOB_MEMORY_LIMIT_MB = "4096"
+  DATAPROFILE_JOB_CPU_LIMIT_SECONDS = "120"
+  DATAPROFILE_JOB_WALL_CLOCK_SECONDS = "120"
+  DATAPROFILE_JOB_MAX_OPEN_FILES = "256"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "15s"
+    method = "GET"
+    path = "/v1/health"
+    protocol = "http"
+    timeout = "10s"
+
+  [[http_service.machine_checks]]
+    image = "curlimages/curl"
+    entrypoint = ["/bin/sh", "-c"]
+    command = ["curl -fsS http://[$FLY_TEST_MACHINE_IP]:8080/v1/health | grep '\"status\":\"ok\"'"]
+
+[[vm]]
+  size = "performance-2x"
+  memory = "4gb"
+  cpu_kind = "performance"
+  cpus = 2
+
