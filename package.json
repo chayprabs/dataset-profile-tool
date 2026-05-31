@@ -19,7 +19,8 @@
     "verify:acceptance": "python3 scripts/verify_acceptance.py",
     "verify:deployment-artifacts": "python3 scripts/verify_deployment_artifacts.py",
     "verify:privacy-security": "python3 scripts/verify_privacy_security.py",
-    "verify:local-stack": "python3 scripts/verify_local_stack.py"
+    "verify:local-stack": "python3 scripts/verify_local_stack.py",
+    "samples:generate": "python3 apps/worker/tests/fixtures/generate_samples.py"
   },
   "devDependencies": {
     "lighthouse": "^13.3.0"

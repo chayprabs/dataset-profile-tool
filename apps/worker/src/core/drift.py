@@ -79,7 +79,11 @@ def diff_profiles(before: ProfileResponse, after: ProfileResponse) -> DriftRespo
             severity="breaking",
             message=f"{column_name} removed",
             before=export_column_snapshot(before_columns[column_name]),
-            patchHint={"op": "add", "path": f"/properties/{column_name}", "value": before_columns[column_name].inferredType},
+            patchHint={
+                "op": "add",
+                "path": f"/properties/{column_name}",
+                "value": export_column_snapshot(before_columns[column_name]),
+            },
         )
         for column_name in removed
     ]

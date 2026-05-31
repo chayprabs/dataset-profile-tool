@@ -12,7 +12,7 @@ import { SampleGrid } from "./sample-grid";
 import { SchemaViewer } from "./schema-viewer";
 import { buildProfileHtml, buildProfileMarkdown } from "../lib/profile-report";
 
-const profileTabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies"] as const;
+const profileTabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies", "Drift"] as const;
 const sampleModes = ["head", "tail", "random"] as const;
 const sourceModes = ["upload", "url", "sample"] as const;
 const workspaceModes = ["profile", "drift"] as const;
@@ -25,7 +25,7 @@ type WorkspaceMode = (typeof workspaceModes)[number];
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
 
-const profileSamples = samples.filter((s) => !s.slug.startsWith("drift-week"));
+const profileSamples = samples.filter((s) => !s.slug.startsWith("drift-week-"));
 const driftBeforeDefault =
   samples.find((s) => s.slug === "drift-week-1") ?? profileSamples[0];
 const driftAfterDefault =
@@ -323,6 +323,13 @@ export function DatasetWorkspace({ defaultMode = "profile" }: { defaultMode?: Wo
       {workspaceMode === "profile" && profile ? (
         <ProfileResults
           activeTab={activeTab}
+          onOpenDrift={() => {
+            setWorkspaceMode("drift");
+            setSourceMode("sample");
+            setBeforeSample(driftBeforeDefault);
+            setAfterSample(driftAfterDefault);
+            setActiveTab("Overview");
+          }}
           onShare={async () => {
             setError(null);
             try {
@@ -364,6 +371,7 @@ export function DatasetWorkspace({ defaultMode = "profile" }: { defaultMode?: Wo
 
 function ProfileResults({
   activeTab,
+  onOpenDrift,
   onShare,
   onTabChange,
   piiColumns,
@@ -373,6 +381,7 @@ function ProfileResults({
   shareUrl
 }: {
   activeTab: ProfileTab;
+  onOpenDrift: () => void;
   onShare: () => Promise<void>;
   onTabChange: (tab: ProfileTab) => void;
   piiColumns: Set<string>;
@@ -491,6 +500,17 @@ function ProfileResults({
           {profile.columns.every((c) => c.anomalies.length === 0) ? (
             <p style={{ color: "var(--muted)", fontSize: "0.875rem" }}>No anomalies detected.</p>
           ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === "Drift" ? (
+        <div style={{ marginTop: "1rem" }}>
+          <p style={{ color: "var(--muted)", fontSize: "0.875rem", marginBottom: "0.75rem" }}>
+            Compare two dataset snapshots for schema and distribution drift.
+          </p>
+          <button className="btn-primary" onClick={onOpenDrift} type="button">
+            Open drift compare
+          </button>
         </div>
       ) : null}
     </div>

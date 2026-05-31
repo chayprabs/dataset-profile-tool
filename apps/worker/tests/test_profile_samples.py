@@ -5,6 +5,11 @@ from core.stats import profile_dataset
 SAMPLES_DIR = Path(__file__).resolve().parents[2] / "web" / "public" / "samples"
 
 
+def test_profile_dataset_supports_random_sample_mode():
+    profile = profile_dataset(SAMPLES_DIR / "drift-week-2.csv", sample_mode="random", sample_size=2)
+    assert len(profile.sampleRows) == 2
+
+
 def test_profile_dataset_supports_head_and_tail_sample_modes():
     head_profile = profile_dataset(SAMPLES_DIR / "drift-week-2.csv", sample_mode="head", sample_size=2)
     tail_profile = profile_dataset(SAMPLES_DIR / "drift-week-2.csv", sample_mode="tail", sample_size=2)

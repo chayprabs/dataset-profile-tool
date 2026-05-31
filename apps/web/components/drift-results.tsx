@@ -8,11 +8,19 @@ type DriftResultsProps = {
   apiBaseUrl: string;
   drift: DriftResult;
   onError: (message: string | null) => void;
+  readOnly?: boolean;
   setShareUrl: (url: string | null) => void;
   shareUrl: string | null;
 };
 
-export function DriftResults({ apiBaseUrl, drift, onError, setShareUrl, shareUrl }: DriftResultsProps) {
+export function DriftResults({
+  apiBaseUrl,
+  drift,
+  onError,
+  readOnly = false,
+  setShareUrl,
+  shareUrl
+}: DriftResultsProps) {
   const grouped = {
     breaking: drift.changes.filter((c) => c.severity === "breaking"),
     compatible: drift.changes.filter((c) => c.severity === "compatible"),
@@ -29,13 +37,15 @@ export function DriftResults({ apiBaseUrl, drift, onError, setShareUrl, shareUrl
           label="Markdown"
         />
         <ExportButton content={buildDriftHtml(drift)} fileName="dataprofile-drift.html" label="HTML" />
-        <button
-          className="btn-secondary"
-          onClick={() => void createShare(apiBaseUrl, drift, setShareUrl, onError)}
-          type="button"
-        >
-          Share link
-        </button>
+        {readOnly ? null : (
+          <button
+            className="btn-secondary"
+            onClick={() => void createShare(apiBaseUrl, drift, setShareUrl, onError)}
+            type="button"
+          >
+            Share link
+          </button>
+        )}
       </div>
       {shareUrl ? (
         <p style={{ fontSize: "0.875rem", marginTop: "0.75rem", wordBreak: "break-all" }}>{shareUrl}</p>

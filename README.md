@@ -36,12 +36,28 @@ Or use Docker Compose:
 docker compose up --build
 ```
 
+## Documentation
+
+Product and release docs live in `docs/`:
+
+- `docs/PRODUCT_REQUIREMENTS.md`
+- `docs/IMPLEMENTATION_HANDOFF.md`
+- `docs/RELEASE_QUALIFICATION_CHECKLIST.md`
+- `docs/qc-appendix-b.md`
+
+Regenerate binary samples after changing fixtures:
+
+```bash
+pnpm samples:generate
+```
+
 ## Verification
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test && pnpm test:worker-coverage && pnpm build
 pnpm verify:deployment-artifacts
 python3 scripts/verify_acceptance.py
+python3 scripts/verify_privacy_security.py
 ```
 
 ## Deployment

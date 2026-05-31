@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   flexRender,
@@ -20,6 +20,16 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
   const [selectedColumnName, setSelectedColumnName] = useState<string | null>(columns[0]?.name ?? null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "nullPct", desc: true }]);
   const parentRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!columns.length) {
+      setSelectedColumnName(null);
+      return;
+    }
+    if (!columns.some((column) => column.name === selectedColumnName)) {
+      setSelectedColumnName(columns[0]?.name ?? null);
+    }
+  }, [columns, selectedColumnName]);
 
   const selectedColumn = columns.find((column) => column.name === selectedColumnName) ?? columns[0] ?? null;
   const columnDefs = useMemo<ColumnDef<ColumnProfile>[]>(

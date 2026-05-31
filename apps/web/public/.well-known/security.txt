@@ -1,0 +1,5 @@
+Contact: https://www.chaitanyaprabuddha.com
+Expires: 2027-05-31T23:59:59.000Z
+Preferred-Languages: en
+Policy: https://github.com/chayprabs/dataset-profile-tool/blob/main/SECURITY.md
+Canonical: https://github.com/chayprabs/dataset-profile-tool/blob/main/.well-known/security.txt
