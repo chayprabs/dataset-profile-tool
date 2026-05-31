@@ -68,7 +68,7 @@ def diff_profiles(before: ProfileResponse, after: ProfileResponse) -> DriftRespo
             column=column_name,
             severity="additive",
             message=f"{column_name} added",
-            after=after_columns[column_name].model_dump(mode="json"),
+            after=export_column_snapshot(after_columns[column_name]),
         )
         for column_name in added
     ]
@@ -78,7 +78,7 @@ def diff_profiles(before: ProfileResponse, after: ProfileResponse) -> DriftRespo
             column=column_name,
             severity="breaking",
             message=f"{column_name} removed",
-            before=before_columns[column_name].model_dump(mode="json"),
+            before=export_column_snapshot(before_columns[column_name]),
             patchHint={"op": "add", "path": f"/properties/{column_name}", "value": before_columns[column_name].inferredType},
         )
         for column_name in removed
@@ -109,6 +109,15 @@ def is_identifier_like(column_name: str, before_column: ColumnProfile, after_col
     if normalized_name == "id" or normalized_name.endswith("_id"):
         return True
     return False
+
+
+def export_column_snapshot(column: ColumnProfile) -> dict:
+    data = column.model_dump(mode="json")
+    if data.get("uniquePct", 0) > 100:
+        observed = len({str(item.value) for item in column.topValues})
+        data["uniqueCount"] = observed
+        data["uniquePct"] = min(100.0, round(observed * 100.0 / max(observed + column.nullCount, 1), 4))
+    return data
 
 
 def should_flag_cardinality_change(column_name: str, before_column: ColumnProfile, after_column: ColumnProfile) -> bool:

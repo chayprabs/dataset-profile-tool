@@ -62,7 +62,11 @@ def detect_pii_flags(column_name: str, values: Iterable[object]) -> list[str]:
             continue
         if EMAIL_RE.match(text):
             flags.add("email")
-        if looks_like_phone(text):
+        if DATE_TIME_RE.match(text):
+            flags.add("date-time")
+        elif re.match(r"^\d{4}-\d{2}-\d{2}$", text):
+            pass
+        elif looks_like_phone(text):
             flags.add("phone")
         if SSN_RE.match(text):
             flags.add("ssn")
@@ -72,8 +76,6 @@ def detect_pii_flags(column_name: str, values: Iterable[object]) -> list[str]:
             flags.add("uuid")
         if URI_RE.match(text):
             flags.add("uri")
-        if DATE_TIME_RE.match(text):
-            flags.add("date-time")
         digits = "".join(char for char in text if char.isdigit())
         if len(digits) == 16:
             flags.add("generic_16_digit")

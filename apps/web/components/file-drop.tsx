@@ -41,14 +41,18 @@ export function FileDrop({ disabled, file, onFileChange }: FileDropProps) {
           handleFiles(event.dataTransfer.files);
         }
       }}
+      onClick={() => {
+        if (!disabled) {
+          inputRef.current?.click();
+        }
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           inputRef.current?.click();
         }
       }}
-      role="button"
-      tabIndex={disabled ? -1 : 0}
+      role="presentation"
     >
       <input
         ref={inputRef}

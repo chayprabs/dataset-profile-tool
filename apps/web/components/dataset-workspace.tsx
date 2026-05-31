@@ -229,39 +229,61 @@ export function DatasetWorkspace({ defaultMode = "profile" }: { defaultMode?: Wo
           </div>
         ) : null}
 
-        {sourceMode === "sample" ? (
+        {sourceMode === "sample" && workspaceMode === "profile" ? (
           <div className="workspace-samples">
-            {(workspaceMode === "drift"
-              ? samples.filter((s) => s.slug.startsWith("drift-week") || !s.slug.startsWith("drift"))
-              : profileSamples
-            ).map((sample) => {
-              const isActive =
-                workspaceMode === "drift"
-                  ? sample.slug === beforeSample.slug || sample.slug === afterSample.slug
-                  : sample.slug === selectedSample.slug;
-              return (
-                <button
-                  key={sample.slug}
-                  className={`workspace-sample ${isActive ? "workspace-sample-active" : ""}`}
-                  onClick={() => {
-                    if (workspaceMode === "drift") {
-                      if (sample.slug.includes("week-1") || sample.slug === "drift-week-1") {
-                        setBeforeSample(sample);
-                      } else if (sample.slug.includes("week-2") || sample.slug === "drift-week-2") {
-                        setAfterSample(sample);
-                      } else {
-                        setBeforeSample(sample);
-                      }
-                    } else {
-                      setSelectedSample(sample);
-                    }
-                  }}
-                  type="button"
-                >
-                  {sample.label}
-                </button>
-              );
-            })}
+            {profileSamples.map((sample) => (
+              <button
+                key={sample.slug}
+                className={`workspace-sample ${sample.slug === selectedSample.slug ? "workspace-sample-active" : ""}`}
+                onClick={() => setSelectedSample(sample)}
+                type="button"
+              >
+                {sample.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {sourceMode === "sample" && workspaceMode === "drift" ? (
+          <div className="workspace-row workspace-row-2">
+            <div>
+              <span className="workspace-label">Before sample</span>
+              <select
+                className="workspace-input"
+                onChange={(e) => {
+                  const next = samples.find((s) => s.slug === e.target.value);
+                  if (next) {
+                    setBeforeSample(next);
+                  }
+                }}
+                value={beforeSample.slug}
+              >
+                {samples.map((s) => (
+                  <option key={`before-${s.slug}`} value={s.slug}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <span className="workspace-label">After sample</span>
+              <select
+                className="workspace-input"
+                onChange={(e) => {
+                  const next = samples.find((s) => s.slug === e.target.value);
+                  if (next) {
+                    setAfterSample(next);
+                  }
+                }}
+                value={afterSample.slug}
+              >
+                {samples.map((s) => (
+                  <option key={`after-${s.slug}`} value={s.slug}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         ) : null}
 

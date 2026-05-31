@@ -20,6 +20,8 @@ async def profile_endpoint(
 ):
     if not file and not url:
         raise HTTPException(status_code=400, detail="Provide a file or URL.")
+    if sampleMode not in {"head", "tail", "random"}:
+        raise HTTPException(status_code=400, detail="sampleMode must be head, tail, or random.")
 
     try:
         with job_workspace() as workspace:
