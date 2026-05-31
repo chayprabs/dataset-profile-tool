@@ -5,6 +5,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
     "/drift",
+    "/privacy",
+    "/terms",
     "/csv-profiler",
     "/parquet-profiler",
     "/jsonl-profiler",

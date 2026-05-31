@@ -6,11 +6,12 @@ from contextlib import contextmanager
 import hashlib
 from pathlib import Path
 
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 
 from settings import settings
 
 UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024
+MAX_UPLOAD_BYTES = settings.max_upload_mb * 1024 * 1024
 
 
 @contextmanager
@@ -26,11 +27,19 @@ def job_workspace():
 async def persist_upload(upload: UploadFile, destination: Path) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
     await upload.seek(0)
+    total_bytes = 0
     with destination.open("wb") as handle:
         while True:
             chunk = await upload.read(UPLOAD_CHUNK_SIZE)
             if not chunk:
                 break
+            total_bytes += len(chunk)
+            if total_bytes > MAX_UPLOAD_BYTES:
+                destination.unlink(missing_ok=True)
+                raise HTTPException(
+                    status_code=413,
+                    detail="413_FILE_TOO_LARGE",
+                )
             handle.write(chunk)
     await upload.seek(0)
     return destination

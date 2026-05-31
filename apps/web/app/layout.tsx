@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+
+import { SiteFooter } from "../components/site-footer";
+import { SiteHeader } from "../components/site-header";
 import { siteUrl } from "../lib/site-url";
 import "./globals.css";
 
@@ -11,11 +14,7 @@ export const metadata: Metadata = {
     title: "DataProfile",
     description:
       "Profile CSV, Parquet, JSONL, Avro, and SQLite datasets online with schema inference, drift detection, anomalies, nulls, and cardinality.",
-    images: [
-      {
-        url: "/opengraph-image"
-      }
-    ],
+    images: [{ url: "/opengraph-image" }],
     url: siteUrl,
     siteName: "DataProfile",
     type: "website"
@@ -34,7 +33,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="site-shell">
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </div>
+      </body>
     </html>
   );
 }

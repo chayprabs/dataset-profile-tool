@@ -25,7 +25,8 @@ profile = profile_dataset((repo_root / "apps" / "web" / "public" / "samples" / "
 print(profile.model_dump_json(by_alias=True))
 `;
 
-  const output = execFileSync("python", ["-c", pythonSnippet], {
+  const pythonBin = process.env.PYTHON ?? "python3";
+  const output = execFileSync(pythonBin, ["-c", pythonSnippet], {
     cwd: appRoot,
     encoding: "utf-8"
   });

@@ -18,31 +18,31 @@ export function FeatureLanding({
   bullets
 }: FeatureLandingProps) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-6 py-8">
-      <header className="rounded-[2rem] border border-[var(--border)] bg-[var(--panel)] p-8 shadow-lg shadow-black/5 backdrop-blur">
-        <p className="text-sm uppercase tracking-[0.35em] text-[var(--accent)]">{eyebrow}</p>
-        <h1 className="mt-3 text-4xl font-semibold">{heading}</h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-black/70">{summary}</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            className="rounded-full border border-[var(--accent)] bg-[var(--accent)] px-4 py-2 text-sm text-white"
-            href={ctaHref}
-          >
+    <main className="site-main">
+      <article className="workspace-card" style={{ marginBottom: "1rem" }}>
+        <p style={{ color: "var(--accent)", fontSize: "0.75rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          {eyebrow}
+        </p>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.02em", marginTop: "0.5rem" }}>
+          {heading}
+        </h1>
+        <p style={{ color: "var(--muted)", lineHeight: 1.6, marginTop: "0.75rem", maxWidth: "40rem" }}>
+          {summary}
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "1.25rem" }}>
+          <Link className="btn-primary" href={ctaHref} style={{ display: "inline-block", textDecoration: "none" }}>
             {ctaLabel}
           </Link>
-          <Link className="rounded-full border border-[var(--border)] px-4 py-2 text-sm" href="/">
-            Back to Home
+          <Link className="btn-secondary" href="/" style={{ display: "inline-block", textDecoration: "none" }}>
+            Open profiler
           </Link>
         </div>
-      </header>
+      </article>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))" }}>
         {bullets.map((bullet) => (
-          <article
-            key={bullet}
-            className="rounded-[1.5rem] border border-[var(--border)] bg-white/80 p-5 shadow-lg shadow-black/5"
-          >
-            <p className="text-sm leading-6 text-black/70">{bullet}</p>
+          <article key={bullet} className="workspace-card">
+            <p style={{ color: "#404040", fontSize: "0.875rem", lineHeight: 1.55, margin: 0 }}>{bullet}</p>
           </article>
         ))}
       </section>
