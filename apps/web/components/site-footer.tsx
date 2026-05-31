@@ -8,6 +8,10 @@ export function SiteFooter() {
         ·
       </span>
       <Link href="/terms">Terms &amp; Conditions</Link>
+      <span aria-hidden className="site-footer-sep">
+        ·
+      </span>
+      <Link href="/license">License</Link>
     </footer>
   );
 }

@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/drift",
     "/privacy",
     "/terms",
+    "/license",
     "/csv-profiler",
     "/parquet-profiler",
     "/jsonl-profiler",

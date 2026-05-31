@@ -70,6 +70,10 @@ Production scaffolding is included for Cloudflare (web) and Fly.io (worker). See
 - Author: https://www.chaitanyaprabuddha.com
 - X: https://x.com/chayprabs
 
-## License
+## Legal
 
-AGPL-3.0 — see [LICENSE](LICENSE).
+- **Software:** [LICENSE](LICENSE) (AGPL-3.0) and [NOTICE](NOTICE)
+- **Hosted use:** [Privacy Policy](docs/PRIVACY_POLICY.md) · [Terms of Service](docs/TERMS_OF_SERVICE.md) · [Legal overview](docs/LEGAL.md)
+- **Live site:** `/privacy`, `/terms`, and `/license` on the deployed web app
+
+These documents limit liability and describe data handling to the extent permitted by law; they do not replace advice from a qualified attorney in your jurisdiction.
