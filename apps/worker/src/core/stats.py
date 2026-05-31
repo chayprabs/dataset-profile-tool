@@ -332,7 +332,6 @@ def collect_column_counts(
     if not described_columns:
         return {}
     projections: list[str] = []
-    deferred_unique_counts: dict[str, int] = {}
     for name, *_ in described_columns:
         quoted = quote_identifier(name)
         safe_name = safe_alias(name)
@@ -349,13 +348,6 @@ def collect_column_counts(
                     use_approx_unique_counts and profile_mode == "full",
                 )
             )
-            continue
-
-        sample_unique_count = count_sample_uniques(sample_rows, name)
-        if should_collect_exact_unique_count(name, duckdb_type, sample_unique_count):
-            projections.append(build_unique_count_projection(name, duckdb_type, sample_rows, False))
-        else:
-            deferred_unique_counts[name] = max(sample_unique_count, 51)
 
     row = connection.execute(f"SELECT {', '.join(projections)} FROM active_source").fetchone()
     columns = [description[0] for description in connection.description]
@@ -365,7 +357,7 @@ def collect_column_counts(
         safe_name = safe_alias(name)
         counts_by_column[name] = {
             "nullCount": int(values[f"{safe_name}__null_count"]),
-            "uniqueCount": int(values.get(f"{safe_name}__unique_count", deferred_unique_counts.get(name, 0))),
+            "uniqueCount": int(values[f"{safe_name}__unique_count"]),
         }
     return counts_by_column
 
