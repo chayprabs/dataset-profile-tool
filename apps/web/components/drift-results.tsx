@@ -2,6 +2,7 @@
 
 import type { DriftResult } from "@dataprofile/shared-types";
 
+import { readApiError } from "../lib/api-error";
 import { buildDriftHtml, buildDriftMarkdown } from "../lib/drift-report";
 
 type DriftResultsProps = {
@@ -164,7 +165,7 @@ async function createShare(
       body: JSON.stringify({ kind: "drift", payload: drift })
     });
     if (!response.ok) {
-      throw new Error(`Share failed (${response.status}).`);
+      throw new Error(await readApiError(response, "Share failed"));
     }
     const payload = (await response.json()) as { token: string };
     setShareUrl(`${window.location.origin}/s/${payload.token}`);

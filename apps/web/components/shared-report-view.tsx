@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import type { DriftResult, ProfileResult } from "@dataprofile/shared-types";
 
-import { buildPiiColumnSet } from "../lib/pii-columns";
+import { buildPiiColumnSet, redactSchema } from "../lib/pii-columns";
 
 import { ColumnsTable } from "./columns-table";
 import { DriftResults } from "./drift-results";
@@ -19,6 +19,10 @@ export function SharedProfileReport({ profile }: { profile: ProfileResult }) {
   const [redactSamples, setRedactSamples] = useState(true);
 
   const piiColumns = useMemo(() => buildPiiColumnSet(profile.columns), [profile.columns]);
+  const displaySchema = useMemo(
+    () => (redactSamples ? redactSchema(profile.schema, profile.columns) : profile.schema),
+    [profile.columns, profile.schema, redactSamples]
+  );
 
   return (
     <div className="workspace">
@@ -67,13 +71,13 @@ export function SharedProfileReport({ profile }: { profile: ProfileResult }) {
 
         {activeTab === "Columns" ? (
           <div style={{ marginTop: "1rem" }}>
-            <ColumnsTable columns={profile.columns} />
+            <ColumnsTable columns={profile.columns} redactPii={redactSamples} />
           </div>
         ) : null}
 
         {activeTab === "Schema" ? (
           <div style={{ marginTop: "1rem" }}>
-            <SchemaViewer schema={profile.schema} />
+            <SchemaViewer schema={displaySchema} />
           </div>
         ) : null}
 

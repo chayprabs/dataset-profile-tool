@@ -14,9 +14,17 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import type { ColumnProfile } from "@dataprofile/shared-types";
 
+import { formatColumnValue } from "../lib/pii-columns";
+
 import { ProfileHistogram } from "./profile-histogram";
 
-export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
+export function ColumnsTable({
+  columns,
+  redactPii = true
+}: {
+  columns: ColumnProfile[];
+  redactPii?: boolean;
+}) {
   const [selectedColumnName, setSelectedColumnName] = useState<string | null>(columns[0]?.name ?? null);
   const [sorting, setSorting] = useState<SortingState>([{ id: "nullPct", desc: true }]);
   const parentRef = useRef<HTMLDivElement | null>(null);
@@ -42,7 +50,10 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
             <p className="mt-1 line-clamp-2 text-xs text-black/55">
               {context.row.original.topValues
                 .slice(0, 3)
-                .map((item) => `${String(item.value)} (${item.count})`)
+                .map(
+                  (item) =>
+                    `${formatColumnValue(item.value, context.row.original, redactPii)} (${item.count})`
+                )
                 .join(", ") || "No top values"}
             </p>
           </div>
@@ -89,7 +100,7 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
           (right.original.piiFlags.length + right.original.anomalies.length)
       }
     ],
-    []
+    [redactPii]
   );
 
   const table = useReactTable({
@@ -190,37 +201,52 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
                   </div>
                 </div>
                 <dl className="grid gap-3 text-sm md:grid-cols-2">
-                  <StatTile label="Min" value={selectedColumn.numeric.min} />
-                  <StatTile label="Max" value={selectedColumn.numeric.max} />
-                  <StatTile label="Mean" value={selectedColumn.numeric.mean} />
-                  <StatTile label="P50" value={selectedColumn.numeric.p50} />
-                  <StatTile label="P95" value={selectedColumn.numeric.p95} />
-                  <StatTile label="Stddev" value={selectedColumn.numeric.stddev} />
+                  <StatTile column={selectedColumn} label="Min" redactPii={redactPii} value={selectedColumn.numeric.min} />
+                  <StatTile column={selectedColumn} label="Max" redactPii={redactPii} value={selectedColumn.numeric.max} />
+                  <StatTile column={selectedColumn} label="Mean" redactPii={redactPii} value={selectedColumn.numeric.mean} />
+                  <StatTile column={selectedColumn} label="P50" redactPii={redactPii} value={selectedColumn.numeric.p50} />
+                  <StatTile column={selectedColumn} label="P95" redactPii={redactPii} value={selectedColumn.numeric.p95} />
+                  <StatTile column={selectedColumn} label="Stddev" redactPii={redactPii} value={selectedColumn.numeric.stddev} />
                 </dl>
               </div>
             ) : null}
 
             {selectedColumn.string ? (
               <div className="mt-5 grid gap-3 md:grid-cols-4">
-                <StatTile label="Min length" value={selectedColumn.string.minLen} />
-                <StatTile label="Max length" value={selectedColumn.string.maxLen} />
-                <StatTile label="Lower chars" value={selectedColumn.string.charClasses.lower ?? 0} />
-                <StatTile label="Digits" value={selectedColumn.string.charClasses.digit ?? 0} />
+                <StatTile column={selectedColumn} label="Min length" redactPii={false} value={selectedColumn.string.minLen} />
+                <StatTile column={selectedColumn} label="Max length" redactPii={false} value={selectedColumn.string.maxLen} />
+                <StatTile column={selectedColumn} label="Lower chars" redactPii={false} value={selectedColumn.string.charClasses.lower ?? 0} />
+                <StatTile column={selectedColumn} label="Digits" redactPii={false} value={selectedColumn.string.charClasses.digit ?? 0} />
               </div>
             ) : null}
 
             {selectedColumn.date ? (
               <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <StatTile label="Earliest" value={selectedColumn.date.min} />
-                <StatTile label="Latest" value={selectedColumn.date.max} />
-                <StatTile label="Pattern" value={selectedColumn.date.pattern} />
+                <StatTile
+                  column={selectedColumn}
+                  label="Earliest"
+                  redactPii={redactPii}
+                  value={selectedColumn.date.min}
+                />
+                <StatTile
+                  column={selectedColumn}
+                  label="Latest"
+                  redactPii={redactPii}
+                  value={selectedColumn.date.max}
+                />
+                <StatTile
+                  column={selectedColumn}
+                  label="Pattern"
+                  redactPii={redactPii}
+                  value={selectedColumn.date.pattern}
+                />
               </div>
             ) : null}
 
             {selectedColumn.boolean ? (
               <div className="mt-5 grid gap-3 md:grid-cols-2">
-                <StatTile label="True count" value={selectedColumn.boolean.trueCount} />
-                <StatTile label="False count" value={selectedColumn.boolean.falseCount} />
+                <StatTile column={selectedColumn} label="True count" redactPii={false} value={selectedColumn.boolean.trueCount} />
+                <StatTile column={selectedColumn} label="False count" redactPii={false} value={selectedColumn.boolean.falseCount} />
               </div>
             ) : null}
           </section>
@@ -234,7 +260,9 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
                     key={`${selectedColumn.name}-${String(value.value)}`}
                     className="rounded-[1.25rem] border border-[var(--border)] bg-[#fbf8f2] p-3"
                   >
-                    <p className="truncate text-sm font-medium">{String(value.value)}</p>
+                    <p className="truncate text-sm font-medium">
+                      {formatColumnValue(value.value, selectedColumn, redactPii)}
+                    </p>
                     <p className="mt-1 text-xs text-black/55">{value.count} rows</p>
                   </div>
                 ))
@@ -273,11 +301,21 @@ function Signal({
   );
 }
 
-function StatTile({ label, value }: { label: string; value: number | string | null | undefined }) {
+function StatTile({
+  column,
+  label,
+  redactPii,
+  value
+}: {
+  column: ColumnProfile;
+  label: string;
+  redactPii: boolean;
+  value: number | string | null | undefined;
+}) {
   return (
     <div className="rounded-[1.25rem] border border-[var(--border)] bg-[#fbf8f2] p-4">
       <dt className="text-xs uppercase tracking-[0.2em] text-black/45">{label}</dt>
-      <dd className="mt-2 text-sm text-black/75">{value ?? "-"}</dd>
+      <dd className="mt-2 text-sm text-black/75">{formatColumnValue(value, column, redactPii)}</dd>
     </div>
   );
 }

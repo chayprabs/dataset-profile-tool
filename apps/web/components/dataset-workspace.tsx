@@ -11,7 +11,12 @@ import { FileDrop } from "./file-drop";
 import { SampleGrid } from "./sample-grid";
 import { SchemaViewer } from "./schema-viewer";
 import { readApiError } from "../lib/api-error";
-import { buildPiiColumnSet, redactSampleRows } from "../lib/pii-columns";
+import { inferFormatFromName } from "../lib/format-infer";
+import {
+  buildExportProfile,
+  buildPiiColumnSet,
+  redactSchema
+} from "../lib/pii-columns";
 import { buildProfileHtml, buildProfileMarkdown } from "../lib/profile-report";
 
 const profileTabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies", "Drift"] as const;
@@ -337,7 +342,7 @@ export function DatasetWorkspace({ defaultMode = "profile" }: { defaultMode?: Wo
                 body: JSON.stringify({ kind: "profile", payload: profile })
               });
               if (!response.ok) {
-                throw new Error(`Share failed (${response.status}).`);
+                throw new Error(await readApiError(response, "Share failed"));
               }
               const payload = (await response.json()) as { token: string };
               setShareUrl(`${window.location.origin}/s/${payload.token}`);
@@ -388,9 +393,8 @@ function ProfileResults({
   setRedactSamples: (value: boolean) => void;
   shareUrl: string | null;
 }) {
-  const exportProfile = redactSamples
-    ? { ...profile, sampleRows: redactSampleRows(profile.sampleRows, piiColumns) }
-    : profile;
+  const exportProfile = buildExportProfile(profile, redactSamples);
+  const displaySchema = redactSamples ? redactSchema(profile.schema, profile.columns) : profile.schema;
   return (
     <div className="workspace-card">
       <div className="workspace-tabs">
@@ -425,7 +429,7 @@ function ProfileResults({
               label="HTML"
             />
             <ExportButton
-              content={JSON.stringify(profile.schema, null, 2)}
+              content={JSON.stringify(displaySchema, null, 2)}
               fileName="dataprofile.schema.json"
               label="Schema"
             />
@@ -458,13 +462,13 @@ function ProfileResults({
 
       {activeTab === "Columns" ? (
         <div style={{ marginTop: "1rem" }}>
-          <ColumnsTable columns={profile.columns} />
+          <ColumnsTable columns={profile.columns} redactPii={redactSamples} />
         </div>
       ) : null}
 
       {activeTab === "Schema" ? (
         <div style={{ marginTop: "1rem" }}>
-          <SchemaViewer schema={profile.schema} />
+          <SchemaViewer schema={displaySchema} />
         </div>
       ) : null}
 
@@ -584,28 +588,4 @@ async function appendSample(
   const blob = await fetchSampleBlob(sample);
   formData.append(fileField, blob, sample.path.split("/").pop() ?? `${sample.slug}.${sample.format}`);
   formData.append(formatField, sample.format);
-}
-
-function inferFormatFromName(value: string): string | null {
-  let path = value;
-  try {
-    path = new URL(value).pathname;
-  } catch {
-    // not a URL; use value as-is
-  }
-  const lower = path.toLowerCase();
-  const suffixes = [
-    ".csv",
-    ".tsv",
-    ".json",
-    ".jsonl",
-    ".parquet",
-    ".arrow",
-    ".ipc",
-    ".avro",
-    ".sqlite",
-    ".db"
-  ] as const;
-  const matched = suffixes.find((suffix) => lower.endsWith(suffix));
-  return matched ? matched.slice(1).replace("db", "sqlite").replace("ipc", "arrow") : null;
 }
