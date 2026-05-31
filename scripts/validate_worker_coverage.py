@@ -35,8 +35,7 @@ def main() -> int:
     print(f"Worker coverage total: {total_percent:.2f}%")
 
     for relative_path in sorted(CORE_TARGETS):
-        coverage_key = relative_path.replace("/", "\\")
-        file_payload = files.get(coverage_key)
+        file_payload = files.get(relative_path) or files.get(relative_path.replace("/", "\\"))
         if not file_payload:
             failures.append(f"missing coverage entry for {relative_path}")
             continue

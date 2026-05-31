@@ -25,7 +25,7 @@ jobs:
       - name: Install web deps
         run: pnpm install --frozen-lockfile=false
       - name: Install worker deps
-        run: python -m pip install -e apps/worker[dev]
+        run: python3 -m pip install -e apps/worker[dev]
       - name: Typecheck
         run: pnpm typecheck
       - name: Lint

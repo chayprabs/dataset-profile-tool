@@ -47,7 +47,12 @@ def infer_json_schema(columns: list[ColumnProfile]) -> dict:
                 property_schema["x-dataprofile-formatHint"] = column.format
         if column.piiFlags:
             property_schema["x-dataprofile-piiFlags"] = column.piiFlags
-        if column.uniqueCount and column.uniqueCount <= 10 and len(column.topValues) == column.uniqueCount:
+        if (
+            column.uniqueCount
+            and column.uniqueCount <= 10
+            and len(column.topValues) == column.uniqueCount
+            and column.inferredType not in {"date", "datetime", "timestamp"}
+        ):
             property_schema["enum"] = [normalize_schema_value(column, value.value) for value in column.topValues]
         if column.nullable:
             property_schema["type"] = (
