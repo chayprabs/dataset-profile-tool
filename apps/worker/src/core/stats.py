@@ -112,7 +112,12 @@ def profile_dataset(
             source_row_count = connection.execute("SELECT COUNT(*) FROM active_source").fetchone()[0]
             row_count += source_row_count
             if profile_mode == "full" and not sample_rows:
-                sample_rows = fetch_sample_rows(connection, sample_size, sample_mode)
+                raw_sample_rows = fetch_sample_rows(connection, sample_size, sample_mode)
+                prefix = source.column_prefix or ""
+                sample_rows = [
+                    {(f"{prefix}{key}" if prefix else key): value for key, value in row.items()}
+                    for row in raw_sample_rows
+                ]
             all_columns.extend(
                 profile_columns(
                     connection,
@@ -335,8 +340,15 @@ def collect_column_counts(
             f'COUNT(*) FILTER (WHERE {quoted} IS NULL) AS "{safe_name}__null_count"'
         )
     for name, duckdb_type, *_ in described_columns:
-        if profile_mode == "full":
-            projections.append(build_unique_count_projection(name, duckdb_type, sample_rows, use_approx_unique_counts))
+        if profile_mode in {"full", "drift"}:
+            projections.append(
+                build_unique_count_projection(
+                    name,
+                    duckdb_type,
+                    sample_rows,
+                    use_approx_unique_counts and profile_mode == "full",
+                )
+            )
             continue
 
         sample_unique_count = count_sample_uniques(sample_rows, name)

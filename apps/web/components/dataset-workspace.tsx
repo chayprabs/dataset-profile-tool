@@ -10,6 +10,8 @@ import { DriftResults } from "./drift-results";
 import { FileDrop } from "./file-drop";
 import { SampleGrid } from "./sample-grid";
 import { SchemaViewer } from "./schema-viewer";
+import { readApiError } from "../lib/api-error";
+import { buildPiiColumnSet, redactSampleRows } from "../lib/pii-columns";
 import { buildProfileHtml, buildProfileMarkdown } from "../lib/profile-report";
 
 const profileTabs = ["Overview", "Columns", "Schema", "Sample", "Anomalies", "Drift"] as const;
@@ -54,15 +56,10 @@ export function DatasetWorkspace({ defaultMode = "profile" }: { defaultMode?: Wo
   const [drift, setDrift] = useState<DriftResult | null>(null);
   const [driftShareUrl, setDriftShareUrl] = useState<string | null>(null);
 
-  const piiColumns = useMemo(() => {
-    const names = new Set<string>();
-    for (const column of profile?.columns ?? []) {
-      if (column.piiFlags.length > 0) {
-        names.add(column.name);
-      }
-    }
-    return names;
-  }, [profile]);
+  const piiColumns = useMemo(
+    () => buildPiiColumnSet(profile?.columns ?? []),
+    [profile]
+  );
 
   async function runProfile() {
     setError(null);
@@ -91,13 +88,14 @@ export function DatasetWorkspace({ defaultMode = "profile" }: { defaultMode?: Wo
           blob,
           selectedSample.path.split("/").pop() ?? `${selectedSample.slug}.${selectedSample.format}`
         );
+        formData.append("format", selectedSample.format);
       }
       formData.append("sampleMode", sampleMode);
       formData.append("sampleSize", "20");
 
       const response = await fetch(`${apiBaseUrl}/v1/profile`, { method: "POST", body: formData });
       if (!response.ok) {
-        throw new Error(`Profile failed (${response.status}).`);
+        throw new Error(await readApiError(response, "Profile failed"));
       }
       setProfile((await response.json()) as ProfileResult);
       setActiveTab("Overview");
@@ -141,7 +139,7 @@ export function DatasetWorkspace({ defaultMode = "profile" }: { defaultMode?: Wo
 
       const response = await fetch(`${apiBaseUrl}/v1/drift`, { method: "POST", body: formData });
       if (!response.ok) {
-        throw new Error(`Drift compare failed (${response.status}).`);
+        throw new Error(await readApiError(response, "Drift compare failed"));
       }
       setDrift((await response.json()) as DriftResult);
     } catch (caught) {
@@ -390,6 +388,9 @@ function ProfileResults({
   setRedactSamples: (value: boolean) => void;
   shareUrl: string | null;
 }) {
+  const exportProfile = redactSamples
+    ? { ...profile, sampleRows: redactSampleRows(profile.sampleRows, piiColumns) }
+    : profile;
   return (
     <div className="workspace-card">
       <div className="workspace-tabs">
@@ -409,7 +410,7 @@ function ProfileResults({
         <div style={{ marginTop: "1rem" }}>
           <div className="export-row">
             <ExportButton
-              content={JSON.stringify(profile, null, 2)}
+              content={JSON.stringify(exportProfile, null, 2)}
               fileName="dataprofile-report.json"
               label="JSON"
             />
@@ -586,7 +587,13 @@ async function appendSample(
 }
 
 function inferFormatFromName(value: string): string | null {
-  const lower = value.toLowerCase();
+  let path = value;
+  try {
+    path = new URL(value).pathname;
+  } catch {
+    // not a URL; use value as-is
+  }
+  const lower = path.toLowerCase();
   const suffixes = [
     ".csv",
     ".tsv",

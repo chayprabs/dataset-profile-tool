@@ -39,7 +39,7 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
         cell: (context) => (
           <div>
             <p className="font-semibold">{context.row.original.name}</p>
-            <p className="mt-1 text-xs text-black/55">
+            <p className="mt-1 line-clamp-2 text-xs text-black/55">
               {context.row.original.topValues
                 .slice(0, 3)
                 .map((item) => `${String(item.value)} (${item.count})`)
@@ -103,7 +103,7 @@ export function ColumnsTable({ columns }: { columns: ColumnProfile[] }) {
 
   const virtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
-    estimateSize: () => 84,
+    estimateSize: () => 96,
     getScrollElement: () => parentRef.current,
     overscan: 8
   });

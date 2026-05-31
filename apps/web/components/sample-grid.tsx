@@ -12,6 +12,8 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
+import { redactSampleValue, shouldRedactSampleKey } from "../lib/pii-columns";
+
 type SampleRow = Record<string, unknown>;
 
 export function SampleGrid({
@@ -32,7 +34,11 @@ export function SampleGrid({
     () =>
       keys.map((key) => ({
         accessorFn: (row) => row[key],
-        cell: (context) => renderSampleValue(context.getValue(), redactSamples && piiColumns.has(key)),
+        cell: (context) =>
+          renderSampleValue(
+            context.getValue(),
+            redactSamples && shouldRedactSampleKey(key, piiColumns)
+          ),
         header: key,
         id: key
       })),
@@ -50,7 +56,7 @@ export function SampleGrid({
 
   const virtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
-    estimateSize: () => 64,
+    estimateSize: () => 72,
     getScrollElement: () => parentRef.current,
     overscan: 6
   });
@@ -130,9 +136,5 @@ function renderSampleValue(value: unknown, shouldRedact: boolean) {
   if (!shouldRedact) {
     return String(value);
   }
-  const text = String(value);
-  if (text.length <= 4) {
-    return "[redacted]";
-  }
-  return `${text.slice(0, 2)}[redacted]${text.slice(-2)}`;
+  return redactSampleValue(value);
 }

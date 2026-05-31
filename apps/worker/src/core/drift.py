@@ -118,9 +118,10 @@ def is_identifier_like(column_name: str, before_column: ColumnProfile, after_col
 def export_column_snapshot(column: ColumnProfile) -> dict:
     data = column.model_dump(mode="json")
     if data.get("uniquePct", 0) > 100:
-        observed = len({str(item.value) for item in column.topValues})
-        data["uniqueCount"] = observed
-        data["uniquePct"] = min(100.0, round(observed * 100.0 / max(observed + column.nullCount, 1), 4))
+        row_denominator = max(column.uniqueCount, column.nullCount, len(column.topValues), 1)
+        if column.uniqueCount > row_denominator:
+            data["uniqueCount"] = min(column.uniqueCount, row_denominator)
+        data["uniquePct"] = min(100.0, float(data["uniquePct"]))
     return data
 
 

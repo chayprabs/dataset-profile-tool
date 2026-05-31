@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 
 import type { DriftResult, ProfileResult } from "@dataprofile/shared-types";
 
+import { buildPiiColumnSet } from "../lib/pii-columns";
+
 import { ColumnsTable } from "./columns-table";
 import { DriftResults } from "./drift-results";
 import { SampleGrid } from "./sample-grid";
@@ -16,15 +18,7 @@ export function SharedProfileReport({ profile }: { profile: ProfileResult }) {
   const [activeTab, setActiveTab] = useState<ProfileTab>("Overview");
   const [redactSamples, setRedactSamples] = useState(true);
 
-  const piiColumns = useMemo(() => {
-    const names = new Set<string>();
-    for (const column of profile.columns) {
-      if (column.piiFlags.length > 0) {
-        names.add(column.name);
-      }
-    }
-    return names;
-  }, [profile.columns]);
+  const piiColumns = useMemo(() => buildPiiColumnSet(profile.columns), [profile.columns]);
 
   return (
     <div className="workspace">
@@ -53,14 +47,22 @@ export function SharedProfileReport({ profile }: { profile: ProfileResult }) {
           ))}
         </div>
 
-        {activeTab === "Overview" && profile.warnings.length > 0 ? (
-          <ul style={{ marginTop: "1rem", paddingLeft: "1.25rem" }}>
-            {profile.warnings.map((warning) => (
-              <li key={warning} style={{ fontSize: "0.875rem" }}>
-                {warning}
-              </li>
-            ))}
-          </ul>
+        {activeTab === "Overview" ? (
+          <div style={{ marginTop: "1rem" }}>
+            {profile.warnings.length > 0 ? (
+              <ul style={{ paddingLeft: "1.25rem", margin: "0 0 1rem" }}>
+                {profile.warnings.map((warning) => (
+                  <li key={warning} style={{ fontSize: "0.875rem" }}>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ color: "var(--muted)", fontSize: "0.875rem" }}>
+                No runtime warnings for this snapshot.
+              </p>
+            )}
+          </div>
         ) : null}
 
         {activeTab === "Columns" ? (
@@ -80,7 +82,6 @@ export function SharedProfileReport({ profile }: { profile: ProfileResult }) {
             <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
               <input
                 checked={redactSamples}
-                defaultChecked
                 onChange={(event) => setRedactSamples(event.target.checked)}
                 type="checkbox"
               />
@@ -106,6 +107,9 @@ export function SharedProfileReport({ profile }: { profile: ProfileResult }) {
                   </div>
                 </div>
               ))}
+            {profile.columns.every((column) => column.anomalies.length === 0) ? (
+              <p style={{ color: "var(--muted)", fontSize: "0.875rem" }}>No anomalies detected.</p>
+            ) : null}
           </div>
         ) : null}
       </div>
